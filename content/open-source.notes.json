@@ -309,9 +309,9 @@
   },
   "https://github.com/apache/commons-csv/pull/639": {
     "kind": "tests",
-    "summary": "The testEqualsSkipHeaderRecord method in CSVFormatTest now runs as part of the test suite.",
-    "problem": "When CSVFormat.Builder was introduced in commit 6a2376a9, the builder variant of testEqualsSkipHeaderRecord was added without the @Test annotation. The method existed but JUnit never executed it, leaving the equals behaviour for skipHeaderRecord untested by this method. Its sibling tests, such as testEqualsSkipHeaderRecord_Deprecated, all carried the annotation correctly.",
-    "fix": "The change adds the missing @Test annotation to testEqualsSkipHeaderRecord. The test already passes because the production code is correct; the problem was only that the test was silently skipped. The default Maven build passes with the annotation in place, confirming the test integrates with the existing suite.",
+    "summary": "The CSVFormat.Builder version of testEqualsSkipHeaderRecord in CSVFormatTest now runs, so equality of formats that differ only in skipHeaderRecord is checked again.",
+    "problem": "When CSVFormat.Builder was introduced, the builder version of testEqualsSkipHeaderRecord in CSVFormatTest was written without the @Test annotation. JUnit therefore never ran it, and the builder path for comparing formats that differ in the skip header record setting had no running check. Its sibling tests, including testEqualsSkipHeaderRecord_Deprecated, all carried the annotation, so the gap was easy to miss: the method looked like a test but reported nothing.",
+    "fix": "The change adds the missing @Test annotation to testEqualsSkipHeaderRecord, so the method now runs with the rest of CSVFormatTest. No production code changes. The test, which builds a format with setSkipHeaderRecord(true) and checks that it is not equal to its counterpart in either direction, passes against the current code, and the default Maven build passes with it enabled.",
     "source": "claude",
     "writtenAt": "2026-10-22"
   },
