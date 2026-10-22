@@ -10,12 +10,14 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p worker",
     "cv": "node scripts/generate-cv.mjs",
     "contributions": "node scripts/update-contributions.mjs",
     "lint": "oxlint .",
     "test": "vitest run",
-    "test:e2e": "playwright test --grep-invert visual"
+    "test:e2e": "playwright test --grep-invert visual",
+    "worker:dev": "wrangler -c worker/wrangler.toml dev",
+    "worker:deploy": "wrangler -c worker/wrangler.toml deploy"
   },
   "dependencies": {
     "next": "^16.4.0",
@@ -24,6 +26,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
+    "@cloudflare/workers-types": "^5.20261022.1",
     "@playwright/test": "^1.64.0",
     "@react-pdf/renderer": "^4.9.0",
     "@tailwindcss/postcss": "^4.3.3",
@@ -38,6 +41,7 @@
     "oxlint": "^1.87.0",
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.3",
+    "wrangler": "^4.151.3"
   }
 }

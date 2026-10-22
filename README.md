@@ -55,6 +55,37 @@ changes, so a generated note gets a quick read before it goes live. `content/ope
 is the copy of the GitHub data the site falls back on when GitHub cannot be reached at build time
 (or always with `CONTRIBUTIONS_SOURCE=snapshot`); the same run refreshes it.
 
+## The question box
+
+A full-width bar floats at the bottom of every page where a visitor can ask one question at a time
+about Sharang. The answers come from an AI model, grounded only in `/ai-profile.txt`: a plain-text
+version of everything on the site, built from the same `content/` files by `lib/ask/profile.ts`
+(the phone number is left out on purpose; the box points people at email).
+
+The backend is `worker/`, a Cloudflare Worker on the free plan, which includes 10,000 Workers AI
+neurons a day. It answers `GET /status` (whether the box should show, and how many answers are
+left today) and `POST /ask`. Limits, in `worker/src/logic.ts`: 60 answers a day for everyone
+together, 5 a day per visitor (a salted hash of the address, never the address), 3 a minute per
+visitor, 300 characters a question, 300 tokens an answer. Counters live in Workers KV and reset at
+UTC midnight. The bar (`components/ask/AskBar.tsx`) shows only while the Worker says answers are
+left, and goes away for the day when they run out or the Worker fails, so nothing on the page
+breaks when the quota is spent. The model is `@cf/openai/gpt-oss-120b`; `textOf()` in the Worker
+reads the answer from the result shapes Workers AI uses, since the exact shape for this model was
+not verified before the first deploy: check the first real answer.
+
+Setting it up, once, from the repository root:
+
+```bash
+npx wrangler login
+npx wrangler kv namespace create COUNTERS   # paste the id into worker/wrangler.toml
+npx wrangler -c worker/wrangler.toml secret put VISITOR_SALT   # any long random string
+npm run worker:deploy                       # prints the workers.dev URL
+```
+
+Then set `NEXT_PUBLIC_ASK_URL` to that URL in Vercel (and in `.env.local` for `npm run dev`) and
+redeploy the site. Without the variable the site builds and runs with no box at all.
+`npm run worker:dev` runs the Worker locally.
+
 ## How styling works
 
 Look beside the component first: nothing is styled from a distant global file.
@@ -85,6 +116,7 @@ npm run lint        # oxlint
 npm test            # unit and component tests (Vitest)
 npm run test:e2e    # browser tests (Playwright, uses the Chrome on this machine; run a build first)
 npm run cv          # regenerate public/cv.pdf
+npm run worker:deploy  # deploy the question box's Worker (see below)
 npm run contributions  # refresh the open-source data from GitHub and write missing notes
 ```
 

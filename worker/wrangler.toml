@@ -1,0 +1,26 @@
+# The question box's backend. Deploy from the repository root with:  npm run worker:deploy
+# Once, before the first deploy (see README, "The question box"):
+#   npx wrangler login
+#   npx wrangler kv namespace create COUNTERS      -> paste the id below
+#   npx wrangler -c worker/wrangler.toml secret put VISITOR_SALT   (any long random string)
+name = "sharanggupta-ask"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+workers_dev = true
+
+[ai]
+binding = "AI"
+
+[[kv_namespaces]]
+binding = "COUNTERS"
+id = "REPLACE_WITH_THE_ID_FROM_wrangler_kv_namespace_create"
+
+# Three questions a minute per visitor, on top of the daily caps in src/logic.ts.
+[[ratelimits]]
+name = "ASK_RATE"
+namespace_id = "1001"
+simple = { limit = 3, period = 60 }
+
+[vars]
+SITE_URL = "https://www.sharanggupta.dev"
+ALLOWED_ORIGINS = "https://www.sharanggupta.dev,https://sharanggupta.dev,http://localhost:3000"
