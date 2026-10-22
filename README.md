@@ -60,8 +60,8 @@ is the copy of the GitHub data the site falls back on when GitHub cannot be reac
 
 ## The question box
 
-A full-width bar floats at the bottom of every page where a visitor can ask one question at a time
-about Sharang. The answers come from an AI model, grounded only in `/ai-profile.txt`: a plain-text
+A pill floats at the bottom of every page, with no band behind it, where a visitor can ask one
+question at a time about Sharang. The answers come from an AI model, grounded only in `/ai-profile.txt`: a plain-text
 version of everything on the site, built from the same `content/` files by `lib/ask/profile.ts`
 (the phone number is left out on purpose; the box points people at email).
 
@@ -78,7 +78,7 @@ most of an answer's cost. And every answer is cached in KV for a week, keyed by 
 question and the profile's hash: the same question again costs nothing and counts for nothing. The
 bar (`components/ask/AskBar.tsx`) completes the questions in `content/ask.ts` in grey inside the
 input as the visitor types (Tab or the right arrow accepts; a tappable line on touch screens), so
-most visitors ask in words that are already answered. The bar is one line, with no small print; a
+most visitors ask in words that are already answered. The pill is one line, with no small print; a
 notice appears only when a limit is hit. The Worker logs
 the model's reported token usage per answer, for tuning the daily cap. It keeps a copy of the last
 good profile in KV and answers from it if the site refuses the fetch (Vercel's bot checks can).

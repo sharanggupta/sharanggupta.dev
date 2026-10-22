@@ -22,24 +22,24 @@ export default function Hero() {
       <HexCluster />
       <Container className="relative">
         <div className={`${styles.enter} flex items-center gap-3 text-accent`} style={enterAfter(0)}>
-          <BrandMark size={40} />
+          <BrandMark size={36} />
           <Kicker>{PERSON.focus}</Kicker>
         </div>
-        <h1 className={`${styles.enter} mt-6 text-5xl font-bold tracking-tight sm:text-7xl`} style={enterAfter(1)}>
+        <h1 className={`${styles.enter} mt-4 text-5xl font-bold tracking-tight sm:text-6xl`} style={enterAfter(1)}>
           {PERSON.name}
         </h1>
-        <p className={`${styles.enter} mt-3 text-xl text-accent sm:text-2xl`} style={enterAfter(2)}>
+        <p className={`${styles.enter} mt-2 text-xl text-accent sm:text-2xl`} style={enterAfter(2)}>
           {PERSON.jobTitle}
         </p>
-        <p className={`${styles.enter} mt-6 max-w-xl text-3xl font-medium leading-tight sm:text-4xl`} style={enterAfter(2)}>
+        <p className={`${styles.enter} mt-4 max-w-xl text-3xl font-medium leading-tight`} style={enterAfter(2)}>
           {PERSON.tagline}
         </p>
         {/* No entrance animation here: the first readable text must paint immediately. */}
-        <p className="mt-6 max-w-xl text-lg text-muted">{PERSON.intro}</p>
+        <p className="mt-4 max-w-2xl text-lg text-muted">{PERSON.intro}</p>
         <p className={`${styles.enter} mt-2 text-muted`} style={enterAfter(2)}>
           {PERSON.location}.
         </p>
-        <ul className={`${styles.enter} mt-6 flex flex-wrap gap-x-6 gap-y-2`} style={enterAfter(2)}>
+        <ul className={`${styles.enter} mt-5 flex flex-wrap gap-x-6 gap-y-2`} style={enterAfter(2)}>
           {PROFILES.map((profile) => (
             <li key={profile.label}>
               <TextLink href={profile.href} me>
@@ -48,7 +48,7 @@ export default function Hero() {
             </li>
           ))}
         </ul>
-        <p className={`${styles.enter} mt-8 flex flex-wrap gap-3`} style={enterAfter(2)}>
+        <p className={`${styles.enter} mt-5 flex flex-wrap gap-3`} style={enterAfter(2)}>
           <Button href={CV.path}>{CV.buttonLabel}</Button>
           <Button href={PERSON.mailto} variant="outline">
             {EMAIL_BUTTON_LABEL}
