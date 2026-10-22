@@ -17,3 +17,19 @@
     animation: slide-up 0.5s var(--ease-out) both;
   }
 }
+
+/* The completion hint: "press Tab" where there is a keyboard, a tappable line where there is not. */
+.keyboardOnly {
+  display: inline;
+}
+.touchOnly {
+  display: none;
+}
+@media (hover: none) and (pointer: coarse) {
+  .keyboardOnly {
+    display: none;
+  }
+  .touchOnly {
+    display: inline;
+  }
+}
