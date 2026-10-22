@@ -1,0 +1,122 @@
+{
+  "spring-projects/spring-framework": {
+    "name": "Spring Framework",
+    "stars": 60296,
+    "starsAt": "2026-10-22"
+  },
+  "apache/dubbo": {
+    "name": "Apache Dubbo",
+    "stars": 41576,
+    "starsAt": "2026-10-22"
+  },
+  "mockito/mockito": {
+    "name": "Mockito",
+    "stars": 15453,
+    "starsAt": "2026-10-22"
+  },
+  "OpenFeign/feign": {
+    "name": "OpenFeign",
+    "stars": 9799,
+    "starsAt": "2026-10-22"
+  },
+  "apache/tomcat": {
+    "name": "Apache Tomcat",
+    "stars": 8259,
+    "starsAt": "2026-10-22"
+  },
+  "micronaut-projects/micronaut-core": {
+    "name": "Micronaut Core",
+    "stars": 6438,
+    "starsAt": "2026-10-22"
+  },
+  "apache/camel": {
+    "name": "Apache Camel",
+    "stars": 6376,
+    "starsAt": "2026-10-22"
+  },
+  "apache/maven": {
+    "name": "Apache Maven",
+    "stars": 5374,
+    "starsAt": "2026-10-22"
+  },
+  "jetty/jetty.project": {
+    "name": "Eclipse Jetty",
+    "stars": 4098,
+    "starsAt": "2026-10-22"
+  },
+  "spotbugs/spotbugs": {
+    "name": "SpotBugs",
+    "stars": 3961,
+    "starsAt": "2026-10-22"
+  },
+  "TNG/ArchUnit": {
+    "name": "ArchUnit",
+    "stars": 3871,
+    "starsAt": "2026-10-22"
+  },
+  "apache/logging-log4j2": {
+    "name": "Apache Log4j 2",
+    "stars": 3640,
+    "starsAt": "2026-10-22"
+  },
+  "apache/commons-lang": {
+    "name": "Apache Commons Lang",
+    "stars": 3015,
+    "starsAt": "2026-10-22"
+  },
+  "spring-cloud/spring-cloud-config": {
+    "name": "Spring Cloud Config",
+    "stars": 2049,
+    "starsAt": "2026-10-22"
+  },
+  "spring-projects/spring-integration": {
+    "name": "Spring Integration",
+    "stars": 1630,
+    "starsAt": "2026-10-22"
+  },
+  "apache/commons-io": {
+    "name": "Apache Commons IO",
+    "stars": 1086,
+    "starsAt": "2026-10-22"
+  },
+  "spring-cloud/spring-cloud-stream": {
+    "name": "Spring Cloud Stream",
+    "stars": 1070,
+    "starsAt": "2026-10-22"
+  },
+  "spring-projects/spring-amqp": {
+    "name": "Spring AMQP",
+    "stars": 862,
+    "starsAt": "2026-10-22"
+  },
+  "apache/commons-csv": {
+    "name": "Apache Commons CSV",
+    "stars": 418,
+    "starsAt": "2026-10-22"
+  },
+  "eclipse-ee4j/yasson": {
+    "name": "Eclipse Yasson",
+    "stars": 216,
+    "starsAt": "2026-10-22"
+  },
+  "eclipse-ee4j/mojarra": {
+    "name": "Eclipse Mojarra",
+    "stars": 186,
+    "starsAt": "2026-10-22"
+  },
+  "apache/felix-dev": {
+    "name": "Apache Felix",
+    "stars": 163,
+    "starsAt": "2026-10-22"
+  },
+  "eclipse-ee4j/angus-mail": {
+    "name": "Eclipse Angus Mail",
+    "stars": 88,
+    "starsAt": "2026-10-22"
+  },
+  "apache/ws-wss4j": {
+    "name": "Apache WSS4J",
+    "stars": 46,
+    "starsAt": "2026-10-22"
+  }
+}

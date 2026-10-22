@@ -1,0 +1,19 @@
+/* The bar slides up once the Worker has said the box is open. */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+.bar {
+  box-shadow: 0 -12px 32px -20px color-mix(in srgb, var(--accent) 50%, transparent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .bar {
+    animation: slide-up 0.5s var(--ease-out) both;
+  }
+}

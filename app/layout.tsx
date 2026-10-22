@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import "./globals.css";
+import AskBar from "@/components/ask/AskBar";
 import Footer from "@/components/layout/Footer";
 import Header from "@/components/layout/Header";
 import ReadingProgress from "@/components/layout/ReadingProgress/ReadingProgress";
@@ -23,6 +24,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <Header />
         {children}
         <Footer />
+        <AskBar />
       </body>
     </html>
   );
