@@ -16,6 +16,10 @@ describe("buildProfile", () => {
     expect(profile).toContain("Charlotte Cozens");
   });
 
+  it("names the dissertation once, under the MSc", () => {
+    expect(profile.match(/Modern Serverless Web Application Architecture/g)).toHaveLength(1);
+  });
+
   it("gives the email but never the phone number", () => {
     expect(profile).toContain(PERSON.email);
     expect(profile).not.toContain(PERSON.phoneDisplay);

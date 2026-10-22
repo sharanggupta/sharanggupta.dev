@@ -3,7 +3,7 @@
 // Built from the same content files as the page, so it can never disagree with it. The phone
 // number is left out on purpose: the box should point people at email.
 
-import { DISSERTATION, education, skills } from "@/content/background";
+import { education, skills } from "@/content/background";
 import { experience } from "@/content/experience";
 import { type ContributionSet, KIND_COPY } from "@/content/open-source";
 import { LINKS, PERSON, SITE_URL } from "@/content/person";
@@ -35,8 +35,8 @@ function work(): string {
 
 function background(): string {
   return section("Education and skills", [
+    // The dissertation belongs to the MSc entry only; a separate line made the model attach it to both degrees.
     ...education.map((item) => `- ${item.qualification}, ${item.institution}, ${item.period}.${item.dissertation ? ` ${item.dissertation.label}: ${item.dissertation.url}` : ""}`),
-    `Dissertation: ${DISSERTATION.label} (${DISSERTATION.url}).`,
     ...skills.map((group) => `- ${group.group}: ${group.items.join(", ")}.`),
   ]);
 }
