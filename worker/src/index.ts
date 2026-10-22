@@ -44,10 +44,32 @@ async function increment(env: Env, key: string, value: number, now: Date): Promi
   await env.COUNTERS.put(key, String(value), { expirationTtl: secondsUntilTomorrow(now) + 3600 });
 }
 
+const PROFILE_KEY = "profile:latest";
+/** The profile this isolate last stored in KV, so the copy is only rewritten when the text changes. */
+let storedProfile: string | undefined;
+
+/**
+ * The site's profile, cached at the edge for an hour. A copy of the last good one is kept in KV:
+ * the site's host may challenge or refuse a request (Vercel's bot checks did, once), and the box
+ * should keep answering from what it last knew rather than go dark.
+ */
 async function profileOf(env: Env): Promise<string> {
-  const response = await fetch(`${env.SITE_URL}/ai-profile.txt`, { cf: { cacheTtl: PROFILE_CACHE_SECONDS, cacheEverything: true } });
-  if (!response.ok) throw new Error(`profile ${response.status}`);
-  return response.text();
+  try {
+    const response = await fetch(`${env.SITE_URL}/ai-profile.txt`, { cf: { cacheTtl: PROFILE_CACHE_SECONDS, cacheEverything: true } });
+    if (!response.ok) throw new Error(`profile ${response.status}`);
+    const profile = await response.text();
+    if (!profile.startsWith("# ")) throw new Error("profile is not the plain-text document");
+    if (profile !== storedProfile) {
+      await env.COUNTERS.put(PROFILE_KEY, profile);
+      storedProfile = profile;
+    }
+    return profile;
+  } catch (error) {
+    const fallback = await env.COUNTERS.get(PROFILE_KEY);
+    if (!fallback) throw error;
+    console.warn("using the stored profile", error);
+    return fallback;
+  }
 }
 
 async function status(env: Env, now: Date, cors: Record<string, string>): Promise<Response> {
