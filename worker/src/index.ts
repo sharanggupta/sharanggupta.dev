@@ -3,7 +3,20 @@
 //   POST /ask     -> { answer, remaining }      one answer, grounded in the site's /ai-profile.txt
 // Limits (worker/src/logic.ts): a global daily cap, a per-visitor daily cap, and a per-minute rate
 // limit per visitor, so one person cannot use up the day. Counters live in KV and reset at UTC midnight.
-import { corsHeaders, dayOf, judge, LIMITS, MODEL, secondsUntilTomorrow, systemPrompt, textOf, visitorId } from "./logic";
+import {
+  ANSWER_CACHE_SECONDS,
+  answerKey,
+  cleanQuestion,
+  corsHeaders,
+  dayOf,
+  LIMITS,
+  MODEL,
+  secondsUntilTomorrow,
+  systemPrompt,
+  textOf,
+  visitorId,
+  withinQuota,
+} from "./logic";
 
 export interface Env {
   AI: Ai;
@@ -50,29 +63,49 @@ async function ask(request: Request, env: Env, now: Date, cors: Record<string, s
   if (!success) return json({ error: "slow_down" }, 429, cors);
 
   const body = (await request.json().catch(() => ({}))) as { question?: unknown };
+  const cleaned = cleanQuestion(body.question);
+  if (!cleaned.ok) return json({ error: cleaned.error }, cleaned.status, cors);
   const dayKey = `day:${dayOf(now)}`;
   const visitorKey = `visitor:${visitor}:${dayOf(now)}`;
-  const [today, mine] = await Promise.all([count(env, dayKey), count(env, visitorKey)]);
-  const verdict = judge(body.question, { today, visitor: mine });
-  if (!verdict.ok) return json({ error: verdict.error, remaining: Math.max(0, LIMITS.daily - today) }, verdict.status, cors);
+
+  // A question already answered for this version of the profile costs nothing and counts for nothing.
+  let profile: string;
+  try {
+    profile = await profileOf(env);
+  } catch (error) {
+    console.error("profile failed", error);
+    return json({ error: "unavailable" }, 503, cors);
+  }
+  const key = await answerKey(cleaned.question, profile);
+  const [cached, today, mine] = await Promise.all([env.COUNTERS.get(key), count(env, dayKey), count(env, visitorKey)]);
+  if (cached) return json({ answer: cached, remaining: Math.max(0, LIMITS.daily - today), cached: true }, 200, cors);
+
+  const quota = withinQuota({ today, visitor: mine });
+  if (!quota.ok) return json({ error: quota.error, remaining: Math.max(0, LIMITS.daily - today) }, quota.status, cors);
 
   let answer: string;
   try {
     const result = await env.AI.run(MODEL, {
       messages: [
-        { role: "system", content: systemPrompt(await profileOf(env)) },
-        { role: "user", content: verdict.question },
+        { role: "system", content: systemPrompt(profile) },
+        { role: "user", content: cleaned.question },
       ],
       max_tokens: LIMITS.answerTokens,
     });
     answer = textOf(result);
+    // For tuning LIMITS.daily: what one answer cost, as the model reports it.
+    console.log("usage", JSON.stringify((result as { usage?: unknown }).usage ?? null));
   } catch (error) {
     console.error("answer failed", error);
     return json({ error: "unavailable" }, 503, cors);
   }
   if (!answer) return json({ error: "unavailable" }, 503, cors);
 
-  await Promise.all([increment(env, dayKey, today + 1, now), increment(env, visitorKey, mine + 1, now)]);
+  await Promise.all([
+    increment(env, dayKey, today + 1, now),
+    increment(env, visitorKey, mine + 1, now),
+    env.COUNTERS.put(key, answer, { expirationTtl: ANSWER_CACHE_SECONDS }),
+  ]);
   return json({ answer, remaining: Math.max(0, LIMITS.daily - today - 1) }, 200, cors);
 }
 

@@ -1,8 +1,12 @@
 // The decisions of the question box, with no Cloudflare types, so they can be unit tested.
 
 export const LIMITS = {
-  /** Answers per UTC day for everyone together. Keeps the day inside Workers AI's free 10,000 neurons. */
-  daily: 60,
+  /**
+   * Model answers per UTC day for everyone together. Keeps the day inside Workers AI's free 10,000
+   * neurons: a question costs roughly 150 to 200 of them with the compact profile. Cached answers are free
+   * and do not count.
+   */
+  daily: 45,
   /** Answers per visitor per UTC day. */
   perVisitorDaily: 5,
   /** Longest question accepted, in characters. */
@@ -29,14 +33,50 @@ export function secondsUntilTomorrow(now: Date): number {
 
 export type Verdict = { ok: true; question: string } | { ok: false; status: number; error: string };
 
-/** Whether a question may be answered, given the counters so far. */
-export function judge(rawQuestion: unknown, used: { today: number; visitor: number }): Verdict {
+/** The question with its whitespace tidied, or why it cannot be asked. */
+export function cleanQuestion(rawQuestion: unknown): Verdict {
   const question = typeof rawQuestion === "string" ? rawQuestion.trim().replace(/\s+/g, " ") : "";
   if (question.length < 2) return { ok: false, status: 400, error: "empty" };
   if (question.length > LIMITS.questionChars) return { ok: false, status: 400, error: "too_long" };
+  return { ok: true, question };
+}
+
+/** Whether another model answer is allowed, given the counters so far. */
+export function withinQuota(used: { today: number; visitor: number }): Verdict | { ok: true } {
   if (used.today >= LIMITS.daily) return { ok: false, status: 429, error: "daily_limit" };
   if (used.visitor >= LIMITS.perVisitorDaily) return { ok: false, status: 429, error: "visitor_limit" };
-  return { ok: true, question };
+  return { ok: true };
+}
+
+/** Whether a question may be answered by the model, given the counters so far. */
+export function judge(rawQuestion: unknown, used: { today: number; visitor: number }): Verdict {
+  const cleaned = cleanQuestion(rawQuestion);
+  if (!cleaned.ok) return cleaned;
+  const quota = withinQuota(used);
+  return quota.ok ? cleaned : quota;
+}
+
+/** How long a cached answer is kept. The key includes the profile, so a changed profile starts afresh. */
+export const ANSWER_CACHE_SECONDS = 7 * 24 * 3600;
+
+/** The same question asked with different casing, punctuation or spacing is the same question. */
+export function normaliseQuestion(question: string): string {
+  return question
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export async function sha256Hex(text: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+/** The KV key of a question's cached answer, for this version of the profile. */
+export async function answerKey(question: string, profile: string): Promise<string> {
+  const [questionHash, profileHash] = await Promise.all([sha256Hex(normaliseQuestion(question)), sha256Hex(profile)]);
+  return `answer:${profileHash.slice(0, 12)}:${questionHash.slice(0, 24)}`;
 }
 
 export function systemPrompt(profile: string): string {
@@ -81,7 +121,5 @@ export function corsHeaders(origin: string | null, allowed: readonly string[]): 
 
 /** A stable, anonymous identifier for a visitor: a hash of the address with a secret, never the address itself. */
 export async function visitorId(address: string, salt: string): Promise<string> {
-  const bytes = new TextEncoder().encode(`${salt}:${address}`);
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
-  return [...new Uint8Array(digest).slice(0, 12)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  return (await sha256Hex(`${salt}:${address}`)).slice(0, 24);
 }
