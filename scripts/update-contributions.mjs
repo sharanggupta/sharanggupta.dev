@@ -9,6 +9,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { HANDLE } from "../content/person.ts";
 import { fetchPullRequests } from "../lib/github/pull-requests.ts";
 import { pullRequestContext, starsOf } from "./contributions/github.mjs";
+import { starsMoved } from "./contributions/stars.mjs";
 import { writeNote } from "./contributions/write-note.mjs";
 
 const SNAPSHOT_PATH = "content/open-source.snapshot.json";
@@ -47,11 +48,12 @@ console.log(`${merged.length} merged pull requests, ${pullRequests.openCount} op
 // Sequential on purpose below: the GitHub rate limit, and one model call at a time.
 /* oxlint-disable no-await-in-loop */
 // 2. Star counts for every project, including those only in the notes (changes applied by maintainers).
+//    Written only when a count really moved, so a quiet day changes nothing.
 const repos = new Set([...pullRequests.merged.map((pullRequest) => pullRequest.repo), ...Object.keys(projects)]);
 for (const repo of repos) {
   const stars = await starsOf(repo);
-  const unchanged = projects[repo]?.stars === stars;
-  projects[repo] = { name: projects[repo]?.name ?? repo.split("/")[1], ...projects[repo], stars, starsAt: unchanged ? projects[repo].starsAt : today };
+  const record = projects[repo] ?? { name: repo.split("/")[1] };
+  projects[repo] = starsMoved(record.stars, stars) ? { ...record, stars, starsAt: today } : record;
 }
 
 // 3. A note for every merged pull request that has none.

@@ -50,8 +50,11 @@ subscription, not an API key: locally it needs `claude` to be logged in; in CI i
 from `claude setup-token` as the `CLAUDE_CODE_OAUTH_TOKEN` secret. `--dry-run` shows what would
 change without writing or calling the model; `--rewrite <url>` writes one note again.
 
-`.github/workflows/contributions.yml` runs it every morning and opens a pull request with the
-changes, so a generated note gets a quick read before it goes live. `content/open-source.snapshot.json`
+`.github/workflows/contributions.yml` runs it every morning and commits the result to `main`,
+which Vercel deploys; a day with nothing new commits nothing. Star counts are only rewritten when
+they move by a few percent, so the order stays stable. A generated note has `"source": "claude"`
+in the file; edit it there if it reads wrong. A manual run of the workflow can pass a pull request
+URL to write that note again. `content/open-source.snapshot.json`
 is the copy of the GitHub data the site falls back on when GitHub cannot be reached at build time
 (or always with `CONTRIBUTIONS_SOURCE=snapshot`); the same run refreshes it.
 

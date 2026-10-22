@@ -2,7 +2,8 @@ name: Refresh open-source contributions
 
 # Once a day: fetch the merged pull requests and star counts from GitHub, write a note for any new
 # pull request with Claude Code (on the Claude subscription, through CLAUDE_CODE_OAUTH_TOKEN from
-# `claude setup-token`), and open a pull request with the changes for a quick read before they go live.
+# `claude setup-token`), and commit the result to main, which Vercel deploys. A day with nothing new
+# commits nothing. The run's log says what was written; generated notes carry "source": "claude".
 
 on:
   schedule:
@@ -16,7 +17,6 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
   refresh:
@@ -34,13 +34,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
       - run: npm test
-      - uses: peter-evans/create-pull-request@v7
-        with:
-          branch: bot/contributions
-          title: "Open source: refresh contributions"
-          commit-message: "Open source: refresh the contributions data from GitHub"
-          body: |
-            The daily refresh of the open-source contributions: pull requests and star counts from GitHub,
-            and a note written by Claude Code for every pull request that had none. Read the new notes in
-            `content/open-source.notes.json` (`"source": "claude"`), then merge.
-          delete-branch: true
+      - name: Commit what changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add content/open-source.snapshot.json content/open-source.projects.json content/open-source.notes.json
+          if git diff --cached --quiet; then
+            echo "Nothing changed."
+          else
+            git commit -m "Open source: refresh the contributions data from GitHub"
+            git push
+          fi
