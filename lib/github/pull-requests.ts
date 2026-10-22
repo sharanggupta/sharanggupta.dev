@@ -16,8 +16,8 @@ export type PullRequests = {
   merged: PullRequestFacts[];
   /** How many pull requests are still open. */
   openCount: number;
-  /** When this was fetched. */
-  fetchedAt: string;
+  /** When this was fetched; left out of the committed snapshot so a refresh with no real change stays empty. */
+  fetchedAt?: string;
 };
 
 const API = "https://api.github.com";

@@ -12,7 +12,7 @@ async function loadPullRequests(): Promise<PullRequests> {
   try {
     return mergeWithSnapshot(await fetchPullRequests(HANDLE), snapshot);
   } catch (error) {
-    console.warn(`Using the open-source snapshot of ${snapshot.fetchedAt}: ${(error as Error).message}`);
+    console.warn(`Using the committed open-source snapshot: ${(error as Error).message}`);
     return snapshot;
   }
 }
