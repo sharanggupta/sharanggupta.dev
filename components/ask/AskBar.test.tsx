@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import AskBar from "./AskBar";
@@ -79,5 +79,29 @@ describe("AskBar", () => {
     const { container } = render(<AskBar endpoint={ENDPOINT} />);
     await ask(user, "Last one?");
     await waitFor(() => expect(container).toBeEmptyDOMElement());
+  });
+
+  it("offers suggested questions as chips, and asks one on a click", async () => {
+    const fetch = mockFetch(reply(200, { available: true, remaining: 12 }), reply(200, { answer: "Several, led by Spring Framework.", remaining: 12, cached: true }));
+    const user = userEvent.setup();
+    render(<AskBar endpoint={ENDPOINT} />);
+    const chips = await screen.findByRole("list", { name: "Try one of these" });
+    const chip = within(chips).getByRole("button", { name: "What has Sharang fixed in Spring?" });
+
+    await user.click(chip);
+    expect(await screen.findByText("Several, led by Spring Framework.")).toBeInTheDocument();
+    expect(fetch).toHaveBeenLastCalledWith(`${ENDPOINT}/ask`, expect.objectContaining({ body: JSON.stringify({ question: "What has Sharang fixed in Spring?" }) }));
+    expect(screen.queryByRole("list", { name: "Try one of these" })).not.toBeInTheDocument();
+  });
+
+  it("suggests matching questions while typing, and asks the chosen one", async () => {
+    const fetch = mockFetch(reply(200, { available: true, remaining: 12 }), reply(200, { answer: "At THG he is a Software Engineer.", remaining: 11 }));
+    const user = userEvent.setup();
+    render(<AskBar endpoint={ENDPOINT} />);
+    await user.type(await screen.findByLabelText("Ask a question about Sharang"), "thg");
+    const suggestions = screen.getByRole("list", { name: "Suggested questions" });
+    await user.click(within(suggestions).getByRole("button", { name: "What does Sharang do at THG?" }));
+    expect(await screen.findByText("At THG he is a Software Engineer.")).toBeInTheDocument();
+    expect(fetch).toHaveBeenLastCalledWith(`${ENDPOINT}/ask`, expect.objectContaining({ body: JSON.stringify({ question: "What does Sharang do at THG?" }) }));
   });
 });

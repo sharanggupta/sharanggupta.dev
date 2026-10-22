@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { corsHeaders, dayOf, judge, LIMITS, secondsUntilTomorrow, systemPrompt, textOf, visitorId } from "./logic";
+import { answerKey, corsHeaders, dayOf, judge, LIMITS, normaliseQuestion, secondsUntilTomorrow, systemPrompt, textOf, visitorId } from "./logic";
 
 describe("judge", () => {
   const fresh = { today: 0, visitor: 0 };
@@ -64,5 +64,20 @@ describe("systemPrompt", () => {
     const prompt = systemPrompt("# Sharang Gupta\n## Who");
     expect(prompt).toContain("# Sharang Gupta");
     expect(prompt).toContain("Never share a phone number");
+  });
+});
+
+describe("the answer cache key", () => {
+  it("treats the same question with different casing, punctuation and spacing as one", async () => {
+    expect(normaliseQuestion("  What has Sharang FIXED in Spring?! ")).toBe("what has sharang fixed in spring");
+    const a = await answerKey("What has Sharang fixed in Spring?", "profile v1");
+    expect(a).toBe(await answerKey("what has sharang   fixed in spring", "profile v1"));
+    expect(a).toMatch(/^answer:[0-9a-f]{12}:[0-9a-f]{24}$/);
+  });
+
+  it("starts afresh when the profile changes or the question differs", async () => {
+    const a = await answerKey("What has Sharang fixed in Spring?", "profile v1");
+    expect(a).not.toBe(await answerKey("What has Sharang fixed in Spring?", "profile v2"));
+    expect(a).not.toBe(await answerKey("Where does Sharang work?", "profile v1"));
   });
 });

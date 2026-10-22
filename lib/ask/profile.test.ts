@@ -23,6 +23,6 @@ describe("buildProfile", () => {
   });
 
   it("stays small enough to send with every question", () => {
-    expect(profile.length).toBeLessThan(40_000);
+    expect(profile.length).toBeLessThan(20_000);
   });
 });

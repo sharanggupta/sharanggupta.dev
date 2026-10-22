@@ -59,9 +59,11 @@ function openSource(contributions: ContributionSet): string {
   const lines = [
     `${contributions.all.length} pull requests landed in ${contributions.projectCount} open-source projects; ${contributions.openCount} more are open. Full list with details: ${SITE_URL}${OPEN_SOURCE_PAGE.path}`,
   ];
+  // One line per contribution: the summary says what changed; the problem and fix stay on the page.
+  // Every question carries this whole document, so its size is most of what an answer costs.
   for (const contribution of contributions.all) {
-    const story = contribution.problem && contribution.fix ? ` Problem: ${contribution.problem} Fix: ${contribution.fix}` : contribution.description ? ` ${contribution.description}` : "";
-    lines.push(`- ${contribution.project.name} (${KIND_COPY[contribution.kind].title.toLowerCase()}, landed ${contribution.landed}): ${contribution.title}. ${contribution.pullRequest}.${story}`);
+    const story = contribution.summary ?? contribution.description ?? "";
+    lines.push(`- ${contribution.project.name} (${KIND_COPY[contribution.kind].title.toLowerCase()}, ${contribution.landed}): ${contribution.title}. ${story} ${contribution.pullRequest}`);
   }
   return section("Open-source contributions", lines);
 }

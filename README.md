@@ -67,14 +67,23 @@ version of everything on the site, built from the same `content/` files by `lib/
 
 The backend is `worker/`, a Cloudflare Worker on the free plan, which includes 10,000 Workers AI
 neurons a day. It answers `GET /status` (whether the box should show, and how many answers are
-left today) and `POST /ask`. Limits, in `worker/src/logic.ts`: 60 answers a day for everyone
+left today) and `POST /ask`. Limits, in `worker/src/logic.ts`: 45 model answers a day for everyone
 together, 5 a day per visitor (a salted hash of the address, never the address), 3 a minute per
-visitor, 300 characters a question, 300 tokens an answer. Counters live in Workers KV and reset at
-UTC midnight. The bar (`components/ask/AskBar.tsx`) shows only while the Worker says answers are
-left, and goes away for the day when they run out or the Worker fails, so nothing on the page
-breaks when the quota is spent. The model is `@cf/openai/gpt-oss-120b`; `textOf()` in the Worker
-reads the answer from the result shapes Workers AI uses, since the exact shape for this model was
-not verified before the first deploy: check the first real answer.
+visitor, 300 characters a question, 1,500 output tokens (the model's reasoning counts against
+them). Counters live in Workers KV and reset at UTC midnight.
+
+Two things stretch the free allowance. The profile is kept compact (one line per contribution; the
+problem and fix stay on the page), because every question carries the whole document and that is
+most of an answer's cost. And every answer is cached in KV for a week, keyed by the normalised
+question and the profile's hash: the same question again costs nothing and counts for nothing. The
+bar (`components/ask/AskBar.tsx`) offers the questions in `content/ask.ts` as chips and as
+suggestions while typing, so most visitors ask in words that are already answered. The Worker logs
+the model's reported token usage per answer, for tuning the daily cap.
+
+The bar shows only while the Worker says answers are left, and goes away for the day when they run
+out or the Worker fails, so nothing on the page breaks when the quota is spent. The model is
+`@cf/openai/gpt-oss-120b`; `textOf()` in the Worker reads the answer from the result shapes Workers
+AI uses.
 
 Setting it up, once, from the repository root:
 
