@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { education, skills } from "./background";
 import { experience } from "./experience";
-import { openSourceFixes } from "./open-source";
+import { APPLIED_BY_MAINTAINERS, NOTES } from "./open-source";
 import { LINKS, PERSON, PROFILES } from "./person";
 import { alsoProjects, featuredProjects, repoUrl } from "./projects";
 import { recommendations } from "./recommendations";
@@ -10,7 +10,7 @@ import { SEO } from "./seo";
 import { articleCountWord, articles, seriesIntro } from "./writing";
 
 const everything = JSON.stringify([
-  PERSON, LINKS, featuredProjects, alsoProjects, openSourceFixes, articles, experience, recommendations, education, skills, SEO,
+  PERSON, LINKS, featuredProjects, alsoProjects, NOTES, APPLIED_BY_MAINTAINERS, articles, experience, recommendations, education, skills, SEO,
 ]);
 
 describe("wording that must never appear", () => {
@@ -22,7 +22,9 @@ describe("wording that must never appear", () => {
 describe("links", () => {
   const urls = [
     ...Object.values(LINKS),
-    ...openSourceFixes.map((fix) => fix.pullRequest),
+    ...Object.keys(NOTES),
+    ...Object.values(NOTES).flatMap((note) => (note.issue ? [note.issue.url] : [])),
+    ...APPLIED_BY_MAINTAINERS.flatMap((change) => [change.pullRequest, change.commit.url]),
     ...articles.map((article) => article.url),
     ...featuredProjects.concat(alsoProjects).flatMap((project) => [repoUrl(project), ...(project.liveUrl ? [project.liveUrl] : [])]),
   ];
@@ -42,8 +44,8 @@ describe("sections", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it("are all reachable from the menu, which also offers the CV", () => {
-    const anchors = MENU_ITEMS.filter((item) => item.href.startsWith("#")).map((item) => item.href.slice(1));
+  it("are all reachable from the menu on any page, which also offers the CV", () => {
+    const anchors = MENU_ITEMS.filter((item) => item.href.startsWith("/#")).map((item) => item.href.slice(2));
     for (const id of anchors) expect(Object.values(SECTION)).toContain(id);
     expect(MENU_ITEMS.some((item) => item.download)).toBe(true);
   });

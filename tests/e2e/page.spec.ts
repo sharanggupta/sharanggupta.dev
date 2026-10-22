@@ -7,8 +7,8 @@ test.describe("the page", () => {
     await expect(page.locator("h1")).toHaveCount(1);
     await expect(page.locator("h1")).toHaveText("Sharang Gupta");
 
-    const menuTargets = await page.locator("#site-menu a[href^='#']").evaluateAll((links) =>
-      links.map((link) => link.getAttribute("href")!.slice(1)),
+    const menuTargets = await page.locator("#site-menu a[href^='/#']").evaluateAll((links) =>
+      links.map((link) => link.getAttribute("href")!.slice(2)),
     );
     expect(menuTargets.length).toBeGreaterThanOrEqual(6);
     await Promise.all(menuTargets.map((id) => expect(page.locator(`#${id}`)).toHaveCount(1)));
@@ -32,6 +32,32 @@ test.describe("the page", () => {
     const revealed = lastEntry.locator("xpath=ancestor::*[@data-reveal][1]");
     await expect(revealed).toHaveCSS("opacity", "1");
     await context.close();
+  });
+});
+
+test.describe("the open-source page", () => {
+  test("lists every contribution with a link to its pull request, grouped, and has one h1", async ({ page }) => {
+    await page.goto("/open-source");
+    await expect(page.locator("h1")).toHaveCount(1);
+    await expect(page.getByRole("heading", { name: "Bugs fixed" })).toBeVisible();
+    const entries = page.locator("article h3 a[href*='/pull/']");
+    expect(await entries.count()).toBeGreaterThanOrEqual(30);
+    await expect(page.getByRole("link", { name: "Fix buffer leak in ProtobufDecoder on cancel" })).toBeVisible();
+  });
+
+  test("is reached from the home page and its menu leads back", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("link", { name: /^All \d+ contributions/ }).click();
+    await expect(page).toHaveURL(/\/open-source$/);
+    await page.getByRole("button", { name: "Open menu" }).click();
+    await page.getByRole("link", { name: "Experience" }).click();
+    await expect(page).toHaveURL(/\/#experience$/);
+  });
+
+  test("has no axe violations", async ({ page }) => {
+    await page.goto("/open-source");
+    const results = await new AxeBuilder({ page }).analyze();
+    expect(results.violations.map((violation) => `${violation.id}: ${violation.nodes[0].target}`)).toEqual([]);
   });
 });
 

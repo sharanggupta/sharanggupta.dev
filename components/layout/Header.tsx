@@ -1,3 +1,4 @@
+import Link from "next/link";
 import BrandMark from "@/components/brand/BrandMark";
 import Container from "@/components/ui/Container";
 import { PERSON } from "@/content/person";
@@ -15,10 +16,10 @@ export default function Header() {
     <>
       <header className="absolute inset-x-0 top-0 z-(--z-header)">
         <Container className="flex items-center py-5">
-          <a href="#top" className="flex items-center gap-2 font-semibold text-accent motion-safe:animate-fade-in">
+          <Link href="/#top" className="flex items-center gap-2 font-semibold text-accent motion-safe:animate-fade-in">
             <BrandMark size={30} />
             <span className="text-fg">{PERSON.name}</span>
-          </a>
+          </Link>
         </Container>
       </header>
       <SiteMenu items={MENU_ITEMS} />

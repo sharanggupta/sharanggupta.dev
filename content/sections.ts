@@ -1,8 +1,12 @@
 // The sections of the one-page site, in reading order: their ids, headings and the menu that links to them.
 // Section ids live here only: the page, the menu and the redirects in next.config.ts all read them.
+// Menu links start with "/" so that they also work from the open-source page.
 
 import { CV } from "./person.ts";
 import { SERIES_TITLE, seriesIntro } from "./writing.ts";
+
+/** The one page besides the home page. */
+export const OPEN_SOURCE_PAGE = { path: "/open-source", title: "Everything that landed upstream" } as const;
 
 export const SECTION = {
   work: "work",
@@ -32,7 +36,7 @@ export const SECTION_COPY: Record<SectionId, SectionCopy> = {
   [SECTION.openSource]: {
     label: "Open source",
     title: "Fixes that landed upstream",
-    intro: "Merged pull requests in libraries I use.",
+    intro: "A selection of the merged pull requests in libraries I use.",
   },
   [SECTION.writing]: { label: "Writing", title: SERIES_TITLE, intro: seriesIntro() },
   [SECTION.experience]: { label: "Experience", title: "Where I have worked" },
@@ -75,6 +79,6 @@ const MENU_SECTIONS: readonly SectionId[] = [
 ];
 
 export const MENU_ITEMS: readonly MenuItem[] = [
-  ...MENU_SECTIONS.map((id) => ({ href: `#${id}`, label: SECTION_COPY[id].label })),
+  ...MENU_SECTIONS.map((id) => ({ href: `/#${id}`, label: SECTION_COPY[id].label })),
   { href: CV.path, label: CV.menuLabel, download: CV.downloadName },
 ];

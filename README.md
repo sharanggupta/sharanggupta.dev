@@ -1,6 +1,6 @@
 # sharanggupta.dev
 
-My personal site: selected projects, open-source fixes, writing and experience.
+My personal site: selected projects, open-source contributions, writing and experience.
 Live at https://www.sharanggupta.dev
 
 Built with Next.js (App Router), TypeScript and Tailwind CSS, on Node 24.
@@ -26,9 +26,26 @@ tests/e2e/      Browser tests (Playwright).
 public/         Static files, including the generated cv.pdf.
 ```
 
-The page reads top to bottom in `app/page.tsx`: Hero, Work, Open source, Writing, Experience,
+The home page reads top to bottom in `app/page.tsx`: Hero, Work, Open source, Writing, Experience,
 Recommendations, Background, Contact. Section ids, menu entries and numbering live in
 `content/sections.ts`, so adding a section means one entry there and one folder under `sections/`.
+The one other page, `/open-source`, lists every open-source contribution in full.
+
+## Open-source contributions
+
+The list of contributions is not written by hand. `lib/github/pull-requests.ts` asks the public
+GitHub search API for every pull request of mine merged in a repository that is not mine (no token
+needed; `GITHUB_TOKEN` is used if set), and Next.js caches the answer for a day, so a newly merged
+pull request shows up on its own. `content/open-source.ts` holds only what GitHub cannot know: the
+projects in order of importance, and for each pull request a note with what the problem was and
+how it was fixed. A pull request without a note is still shown, with the start of its own
+description. Changes the maintainers applied as their own commit, which GitHub does not count as
+merged, are listed there too.
+
+`content/open-source.snapshot.json` is a copy of the GitHub data, used when GitHub cannot be
+reached at build time, or always with `CONTRIBUTIONS_SOURCE=snapshot`. Refresh it with
+`npm run contributions` now and then; a test checks that every note still matches a pull request
+in it.
 
 ## How styling works
 
@@ -60,6 +77,7 @@ npm run lint        # oxlint
 npm test            # unit and component tests (Vitest)
 npm run test:e2e    # browser tests (Playwright, uses the Chrome on this machine; run a build first)
 npm run cv          # regenerate public/cv.pdf
+npm run contributions  # refresh content/open-source.snapshot.json from GitHub
 ```
 
 After changing `content/`, run `npm run cv` and commit the new PDF.
