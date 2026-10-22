@@ -306,5 +306,21 @@
     },
     "source": "hand",
     "writtenAt": "2026-10-22"
+  },
+  "https://github.com/apache/commons-csv/pull/639": {
+    "kind": "tests",
+    "summary": "The testEqualsSkipHeaderRecord method in CSVFormatTest now runs as part of the test suite.",
+    "problem": "When CSVFormat.Builder was introduced in commit 6a2376a9, the builder variant of testEqualsSkipHeaderRecord was added without the @Test annotation. The method existed but JUnit never executed it, leaving the equals behaviour for skipHeaderRecord untested by this method. Its sibling tests, such as testEqualsSkipHeaderRecord_Deprecated, all carried the annotation correctly.",
+    "fix": "The change adds the missing @Test annotation to testEqualsSkipHeaderRecord. The test already passes because the production code is correct; the problem was only that the test was silently skipped. The default Maven build passes with the annotation in place, confirming the test integrates with the existing suite.",
+    "source": "claude",
+    "writtenAt": "2026-10-22"
+  },
+  "https://github.com/apache/commons-io/pull/899": {
+    "kind": "tests",
+    "summary": "Two test methods now run because they have the missing @Test annotation.",
+    "problem": "CharsetsTest.testIsUTF8CharsetUTF8 and FileTimesTest.testIsUnixTimeFileTimeNull were written without the @Test annotation. JUnit therefore never executed them. They appeared in the source tree and passed compilation, but they provided no coverage and any regression they were meant to catch would go unnoticed.",
+    "fix": "The change adds @Test to both methods. With the annotation present, the Maven build runs them and both pass. Because there is no behavioural change to production code, no additional tests are needed; the methods themselves are the verification that the annotation is correct.",
+    "source": "claude",
+    "writtenAt": "2026-10-22"
   }
 }

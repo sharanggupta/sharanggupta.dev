@@ -1,10 +1,7 @@
 // Writes the note for one pull request with Claude Code in headless mode (`claude -p`), so it runs on
 // the Claude subscription: locally after `claude` is logged in, and in GitHub Actions with the
 // long-lived token from `claude setup-token` in CLAUDE_CODE_OAUTH_TOKEN. No API key is involved.
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
-
-const run = promisify(execFile);
+import { spawn } from "node:child_process";
 const MODEL = "opus";
 const TIMEOUT_MS = 10 * 60 * 1000;
 
@@ -54,11 +51,36 @@ function render(context, projectName, examples) {
   return `${GUIDE}\n\nExamples of finished entries:\n${shown}\n\nMaterial for the entry to write:\n\n${parts.join("\n\n")}`;
 }
 
+/** Runs a command with the given text on its standard input and resolves with its standard output. */
+function run(command, args, input, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, { stdio: ["pipe", "pipe", "pipe"] });
+    let stdout = "";
+    let stderr = "";
+    const timer = setTimeout(() => {
+      child.kill();
+      reject(new Error(`timed out after ${timeoutMs / 1000}s`));
+    }, timeoutMs);
+    child.stdout.on("data", (chunk) => (stdout += chunk));
+    child.stderr.on("data", (chunk) => (stderr += chunk));
+    child.on("error", (error) => {
+      clearTimeout(timer);
+      reject(error);
+    });
+    child.on("close", (code) => {
+      clearTimeout(timer);
+      if (code === 0) resolve(stdout);
+      else reject(new Error(`exited with ${code}: ${stderr.trim() || stdout.trim()}`));
+    });
+    // The prompt goes in on stdin, which is then closed: without the close, claude waits for more input forever.
+    child.stdin.end(input);
+  });
+}
+
 /** The note for one pull request, as {kind, summary, problem, fix, projectName}. */
 export async function writeNote(context, { projectName, examples }) {
   const prompt = render(context, projectName, examples);
-  const { stdout } = await run(
-    // A `claude` whose login has expired retries without end; the timeout turns that into a clear failure.
+  const stdout = await run(
     "claude",
     [
       "-p",
@@ -77,9 +99,10 @@ export async function writeNote(context, { projectName, examples }) {
       '{"mcpServers":{}}',
       "--no-session-persistence",
     ],
-    { input: prompt, timeout: TIMEOUT_MS, maxBuffer: 10 * 1024 * 1024 },
+    prompt,
+    TIMEOUT_MS,
   ).catch((error) => {
-    throw new Error(`Claude Code failed for ${context.url}: ${error.message}. Is \`claude\` logged in (claude login), or CLAUDE_CODE_OAUTH_TOKEN set?`);
+    throw new Error(`Claude Code failed for ${context.url}: ${error.message}. Is \`claude\` logged in (/login), or CLAUDE_CODE_OAUTH_TOKEN set?`);
   });
   const result = JSON.parse(stdout);
   if (result.is_error || !result.structured_output) {

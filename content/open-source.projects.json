@@ -1,7 +1,7 @@
 {
   "spring-projects/spring-framework": {
     "name": "Spring Framework",
-    "stars": 60297,
+    "stars": 60296,
     "starsAt": "2026-10-22"
   },
   "apache/dubbo": {
@@ -72,6 +72,11 @@
   "spring-projects/spring-integration": {
     "name": "Spring Integration",
     "stars": 1630,
+    "starsAt": "2026-10-22"
+  },
+  "apache/commons-io": {
+    "name": "Apache Commons IO",
+    "stars": 1086,
     "starsAt": "2026-10-22"
   },
   "spring-cloud/spring-cloud-stream": {
