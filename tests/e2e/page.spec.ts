@@ -54,10 +54,14 @@ test.describe("the open-source page", () => {
     await expect(page).toHaveURL(/\/#experience$/);
   });
 
-  test("has no axe violations", async ({ page }) => {
+  test("has no axe violations", async ({ browser }) => {
+    // Reduced motion, as for the home page: axe must not scan mid-way through the header's fade-in.
+    const context = await browser.newContext({ reducedMotion: "reduce" });
+    const page = await context.newPage();
     await page.goto("/open-source");
     const results = await new AxeBuilder({ page }).analyze();
     expect(results.violations.map((violation) => `${violation.id}: ${violation.nodes[0].target}`)).toEqual([]);
+    await context.close();
   });
 });
 

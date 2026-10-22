@@ -8,6 +8,13 @@
       "mergedAt": "2026-10-22T05:49:29Z"
     },
     {
+      "url": "https://github.com/apache/commons-csv/pull/639",
+      "title": "Add missing @Test to CSVFormatTest.testEqualsSkipHeaderRecord#testEqualsSkipHeaderRecord()",
+      "body": "The `CSVFormat.Builder` version of `testEqualsSkipHeaderRecord` was added without `@Test` when the builder was introduced (6a2376a9), so it never ran. Its siblings, including `testEqualsSkipHeaderRecord_Deprecated`, all have `@Test`. This adds the annotation; the test passes, and the default `mvn` build passes.\n\nBefore you push a pull request, review this list:\n\n- [x] Read the [contribution guidelines](CONTRIBUTING.md) for this project.\n- [x] Read the [ASF Generative Tooling Guidance](https://www.apache.org/legal/generative-tooling.html) if you use Artificial Intelligence (AI).\n- [x] I used AI to create any part of, or all of, this pull request. Which AI tool was used to create this pull request, and to what extent did it contribute? Claude (Anthropic) helped analyse the issue and draft the change and tests; I reviewed them against the code and ran the build.\n- [x] Run a successful build using the default [Maven](https://maven.apache.org/) goal with `mvn`; that's `mvn` on the command line by itself.\n- [ ] Write unit tests that match behavioral changes, where the tests fail if the changes to the runtime are not applied. This may not always be possible, but it is a best practice.\n- [x] Write a pull request description that is detailed enough to understand what the pull request does, how, and why.\n- [x] Each commit in the pull request should have a meaningful subject line and body. Note that a maintainer may squash commits during the merge process.\n",
+      "repo": "apache/commons-csv",
+      "mergedAt": "2026-10-22T11:24:12Z"
+    },
+    {
       "url": "https://github.com/apache/commons-lang/pull/1830",
       "title": "Rename ReflectionToStringBuilderOverrideExclude so Surefire runs it",
       "body": "The test class `ReflectionToStringBuilderOverrideExclude` doesn't end in `Test`, so it doesn't match the Surefire include pattern and its three tests have never run. The master CI log shows every other `ReflectionToStringBuilder*Test` class running and none of this one.\n\nThis renames it to `ReflectionToStringBuilderOverrideExcludeTest`. With the rename, its three tests run and pass.\n\nOne thing I noticed while checking it: in `toStringIncludeDoesNotExposeExcludedField`, the last assertion (`INCLUDE_2`, the email) passes only because the earlier `builder.toString()` calls already appended the email to the builder's buffer. The include list at that point is `username` and `password`. I left the test unchanged to keep this to the rename.\n\nBefore you push a pull request, review this list:\n\n- [x] Read the [contribution guidelines](CONTRIBUTING.md) for this project.\n- [x] Read the [ASF Generative Tooling Guidance](https://www.apache.org/legal/generative-tooling.html) if you use Artificial Intelligence (AI).\n- [x] I used AI to create any part of, or all of, this pull request. Which AI tool was used to create this pull request, and to what extent did it contribute? Claude (Anthropic) helped analyse the issue and draft the change and tests; I reviewed them against the code and ran the build.\n- [x] Run a successful build using the default [Maven](https://maven.apache.org/) goal with `mvn`; that's `mvn` on the command line by itself.\n- [ ] Write unit tests that match behavioral changes, ",
@@ -246,6 +253,6 @@
       "mergedAt": "2026-10-07T21:15:49Z"
     }
   ],
-  "openCount": 129,
-  "fetchedAt": "2026-10-22T11:02:18.334Z"
+  "openCount": 128,
+  "fetchedAt": "2026-10-22T11:26:31.108Z"
 }

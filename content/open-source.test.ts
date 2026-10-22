@@ -4,83 +4,88 @@ import {
   APPLIED_BY_MAINTAINERS,
   buildContributions,
   descriptionFrom,
+  FEATURED_COUNT,
   inferIssue,
   inferKind,
   KIND,
   KIND_ORDER,
+  type Note,
   NOTES,
   ofKind,
+  PROJECTS,
 } from "./open-source";
 import snapshot from "./open-source.snapshot.json";
 
 const SPRING_PR = "https://github.com/spring-projects/spring-framework/pull/37543";
+const TINY_FIX = "https://github.com/some-org/tiny-lib/pull/9";
+const TINY_TEST = "https://github.com/some-org/tiny-lib/pull/7";
+
+const note = (kind: Note["kind"], summary: string): Note => ({ kind, summary, problem: "p", fix: "f", source: "hand", writtenAt: "2026-10-22" });
+
+const sources = {
+  notes: { [SPRING_PR]: note(KIND.fix, "No more leak."), [TINY_TEST]: note(KIND.tests, "Runs again.") },
+  projects: {
+    "spring-projects/spring-framework": { name: "Spring Framework", stars: 60_000, starsAt: "2026-10-22" },
+    "spring-cloud/spring-cloud-stream": { name: "Spring Cloud Stream", stars: 1_000, starsAt: "2026-10-22" },
+  },
+};
 
 const sample: PullRequests = {
   fetchedAt: "2026-10-22T00:00:00Z",
   openCount: 3,
   merged: [
+    { url: TINY_TEST, title: "Run the test that was missing @Test", body: "", repo: "some-org/tiny-lib", mergedAt: "2026-10-20T10:00:00Z" },
     {
-      url: "https://github.com/some-org/tiny-lib/pull/7",
-      title: "Run the test that was missing @Test",
-      body: "",
-      repo: "some-org/tiny-lib",
-      mergedAt: "2026-10-20T10:00:00Z",
-    },
-    {
-      url: "https://github.com/some-org/tiny-lib/pull/9",
+      url: TINY_FIX,
       title: "Handle an empty header value",
       body: "<!-- template -->\nFixes #41\n\nThe parser threw on an empty `value`.\nIt now returns an empty string.\n\n## Checklist\n- [x] tests",
       repo: "some-org/tiny-lib",
       mergedAt: "2026-10-21T10:00:00Z",
     },
-    {
-      url: SPRING_PR,
-      title: "Fix buffer leak in ProtobufDecoder on cancel",
-      body: "The decoder leaked.",
-      repo: "spring-projects/spring-framework",
-      mergedAt: "2026-10-22T10:00:00Z",
-    },
+    { url: SPRING_PR, title: "Fix buffer leak in ProtobufDecoder on cancel", body: "The decoder leaked.", repo: "spring-projects/spring-framework", mergedAt: "2026-10-22T10:00:00Z" },
   ],
 };
 
 describe("buildContributions", () => {
-  const set = buildContributions(sample);
+  const set = buildContributions(sample, sources);
+  const find = (url: string) => set.all.find((contribution) => contribution.pullRequest === url)!;
 
-  it("joins the GitHub facts with the note for that pull request", () => {
-    const spring = set.all.find((contribution) => contribution.pullRequest === SPRING_PR)!;
-    expect(spring.project.name).toBe("Spring Framework");
+  it("joins the GitHub facts with the note and the project record", () => {
+    const spring = find(SPRING_PR);
+    expect(spring.project).toEqual({ name: "Spring Framework", repo: "spring-projects/spring-framework", url: "https://github.com/spring-projects/spring-framework", stars: 60_000 });
     expect(spring.landed).toBe("2026-10-22");
     expect(spring.kind).toBe(KIND.fix);
-    expect(spring.featured).toBe(true);
-    expect(spring.problem).toBe(NOTES[SPRING_PR].problem);
+    expect(spring.summary).toBe("No more leak.");
     expect(spring.description).toBeUndefined();
   });
 
-  it("shows a pull request without a note, named after its repository, with its own description and issue", () => {
-    const unknown = set.all.find((contribution) => contribution.pullRequest.endsWith("/pull/9"))!;
-    expect(unknown.project).toEqual({ name: "tiny-lib", repo: "some-org/tiny-lib", url: "https://github.com/some-org/tiny-lib" });
+  it("shows a pull request without a note or project record, with its own description and issue", () => {
+    const unknown = find(TINY_FIX);
+    expect(unknown.project).toEqual({ name: "tiny-lib", repo: "some-org/tiny-lib", url: "https://github.com/some-org/tiny-lib", stars: 0 });
     expect(unknown.kind).toBe(KIND.fix);
     expect(unknown.issue).toEqual({ label: "#41", url: "https://github.com/some-org/tiny-lib/issues/41" });
     expect(unknown.description).toBe("The parser threw on an empty value. It now returns an empty string.");
-    expect(unknown.featured).toBeUndefined();
   });
 
-  it("orders by group, then project importance, then newest first", () => {
+  it("orders by group, then stars, then newest first", () => {
     const fixes = ofKind(set, KIND.fix).map((contribution) => contribution.pullRequest);
     expect(fixes[0]).toBe(SPRING_PR);
-    expect(fixes.at(-1)).toContain("some-org/tiny-lib/pull/9");
+    expect(fixes.at(-1)).toBe(TINY_FIX);
     expect(set.all.at(-1)!.kind).toBe(KIND.tests);
+  });
+
+  it("features only fixes and features that have a note, one per project", () => {
+    // The applied-by-maintainers change has no note in these sources, so it is not featured either.
+    expect(set.featured.map((contribution) => contribution.pullRequest)).toEqual([SPRING_PR]);
+    expect(find(TINY_FIX).featured).toBe(false);
+    expect(find(TINY_TEST).featured).toBe(false);
   });
 
   it("adds the changes the maintainers applied themselves, with their commit", () => {
     const applied = set.all.filter((contribution) => contribution.commit);
     expect(applied.map((contribution) => contribution.pullRequest)).toEqual(APPLIED_BY_MAINTAINERS.map((change) => change.pullRequest));
     expect(set.projectCount).toBe(2 + APPLIED_BY_MAINTAINERS.length);
-  });
-
-  it("passes the open count through and lists only noted contributions as featured", () => {
     expect(set.openCount).toBe(3);
-    expect(set.featured.map((contribution) => contribution.pullRequest)).toEqual([SPRING_PR]);
   });
 });
 
@@ -130,30 +135,32 @@ describe("descriptionFrom", () => {
   });
 });
 
-describe("the notes", () => {
-  const noted = Object.keys(NOTES);
+describe("the committed data", () => {
   const landed = [...snapshot.merged.map((pullRequest) => pullRequest.url), ...APPLIED_BY_MAINTAINERS.map((change) => change.pullRequest)];
 
-  it("each describe a pull request that landed, so none is stale", () => {
-    for (const url of noted) expect(landed).toContain(url);
+  // A pull request merged since the last daily refresh has no note yet; that is expected, not a failure.
+  it("has no note for a pull request that did not land", () => {
+    for (const url of Object.keys(NOTES)) expect(landed).toContain(url);
   });
 
-  it("each have a summary, a problem and a fix, and every featured one has a summary", () => {
-    for (const [url, note] of Object.entries(NOTES)) {
-      expect(note.summary, url).toBeTruthy();
-      expect(note.problem, url).toBeTruthy();
-      expect(note.fix, url).toBeTruthy();
-      expect(KIND_ORDER).toContain(note.kind);
+  it("has complete notes", () => {
+    for (const [url, entry] of Object.entries(NOTES)) {
+      expect(KIND_ORDER, url).toContain(entry.kind);
+      expect(entry.summary.length, url).toBeGreaterThan(20);
+      expect(entry.problem.length, url).toBeGreaterThan(40);
+      expect(entry.fix.length, url).toBeGreaterThan(40);
+      expect(["hand", "claude"]).toContain(entry.source);
     }
   });
 
-  it("feature between six and ten contributions for the home page", () => {
-    const featured = Object.values(NOTES).filter((note) => note.featured).length;
-    expect(featured).toBeGreaterThanOrEqual(6);
-    expect(featured).toBeLessThanOrEqual(10);
+  it("has a name and stars in every project record", () => {
+    for (const [repo, record] of Object.entries(PROJECTS)) {
+      expect(record.name, repo).not.toBe("");
+      expect(record.stars, repo).toBeGreaterThan(0);
+    }
   });
 
-  it("cover every pull request in the snapshot", () => {
-    for (const pullRequest of snapshot.merged) expect(noted, pullRequest.url).toContain(pullRequest.url);
+  it("features a full set from the snapshot", () => {
+    expect(buildContributions(snapshot).featured).toHaveLength(FEATURED_COUNT);
   });
 });

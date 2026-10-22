@@ -79,7 +79,7 @@ export default function AllContributions({ contributions }: { contributions: Con
       <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-5xl">{OPEN_SOURCE_PAGE.title}</h1>
       <p className="mt-4 max-w-2xl text-lg text-muted">
         {contributions.all.length} pull requests that landed in {contributions.projectCount} projects, each with what the problem was
-        and how it was fixed. The list comes from GitHub; the notes are mine.
+        and how it was fixed.
       </p>
       <p className="mt-4 text-muted">
         {contributions.openCount} more are in review: <TextLink href={LINKS.openPullRequests}>open pull requests on GitHub</TextLink>.

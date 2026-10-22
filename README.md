@@ -33,19 +33,27 @@ The one other page, `/open-source`, lists every open-source contribution in full
 
 ## Open-source contributions
 
-The list of contributions is not written by hand. `lib/github/pull-requests.ts` asks the public
-GitHub search API for every pull request of mine merged in a repository that is not mine (no token
-needed; `GITHUB_TOKEN` is used if set), and Next.js caches the answer for a day, so a newly merged
-pull request shows up on its own. `content/open-source.ts` holds only what GitHub cannot know: the
-projects in order of importance, and for each pull request a note with what the problem was and
-how it was fixed. A pull request without a note is still shown, with the start of its own
-description. Changes the maintainers applied as their own commit, which GitHub does not count as
-merged, are listed there too.
+Nothing in the open-source section is typed in by hand:
 
-`content/open-source.snapshot.json` is a copy of the GitHub data, used when GitHub cannot be
-reached at build time, or always with `CONTRIBUTIONS_SOURCE=snapshot`. Refresh it with
-`npm run contributions` now and then; a test checks that every note still matches a pull request
-in it.
+- **The list** comes from the public GitHub search API (`lib/github/pull-requests.ts`): every pull
+  request of mine merged in a repository that is not mine. No token is needed. Next.js caches the
+  answer for a day, so a newly merged pull request shows up on its own.
+- **The order** follows each project's star count, kept in `content/open-source.projects.json` with
+  its display name. The home page features the best fix or feature of the eight most-starred projects.
+- **The notes** (what the problem was, how it was fixed) live in `content/open-source.notes.json`.
+  A pull request without a note is still shown, with the start of its own description.
+
+`npm run contributions` refreshes all three files: it fetches the pull requests and star counts, and
+for every pull request without a note it runs Claude Code headless (`claude -p`, with the pull
+request's description, diff, linked issue and review thread) to write one. That uses the Claude
+subscription, not an API key: locally it needs `claude` to be logged in; in CI it needs the token
+from `claude setup-token` as the `CLAUDE_CODE_OAUTH_TOKEN` secret. `--dry-run` shows what would
+change without writing or calling the model; `--rewrite <url>` writes one note again.
+
+`.github/workflows/contributions.yml` runs it every morning and opens a pull request with the
+changes, so a generated note gets a quick read before it goes live. `content/open-source.snapshot.json`
+is the copy of the GitHub data the site falls back on when GitHub cannot be reached at build time
+(or always with `CONTRIBUTIONS_SOURCE=snapshot`); the same run refreshes it.
 
 ## How styling works
 
@@ -77,7 +85,7 @@ npm run lint        # oxlint
 npm test            # unit and component tests (Vitest)
 npm run test:e2e    # browser tests (Playwright, uses the Chrome on this machine; run a build first)
 npm run cv          # regenerate public/cv.pdf
-npm run contributions  # refresh content/open-source.snapshot.json from GitHub
+npm run contributions  # refresh the open-source data from GitHub and write missing notes
 ```
 
 After changing `content/`, run `npm run cv` and commit the new PDF.
