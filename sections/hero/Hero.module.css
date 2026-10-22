@@ -2,7 +2,8 @@
 .hero {
   position: relative;
   overflow: hidden;
-  padding: 6.5rem 0 calc(var(--space-section) + var(--cut));
+  /* Little room above and below the content, so the diagonal edge is in view on a first screen of ~800px. */
+  padding: 4.5rem 0 calc(var(--cut) + 3rem);
   background:
     radial-gradient(48rem 26rem at 88% 8%, color-mix(in srgb, var(--accent) 28%, transparent), transparent 62%),
     linear-gradient(165deg, color-mix(in srgb, var(--accent) 13%, var(--bg)), var(--bg) 72%);

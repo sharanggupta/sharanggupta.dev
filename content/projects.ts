@@ -8,6 +8,8 @@ export type Project = {
   /** Repository name under the owner's GitHub account. */
   repo: string;
   status?: string;
+  /** The short label on the card's art. Without it, the status is shown, or else the first tag. */
+  badge?: string;
   description: string;
   tags: string[];
   liveUrl?: string;
@@ -15,9 +17,9 @@ export type Project = {
   cvSummary: string;
 };
 
-/** The short label on a project's art: its status, or else its first technology. */
-export function projectBadge(project: Pick<Project, "status" | "tags">): string {
-  return project.status ?? project.tags[0];
+/** The short label on a project's art: its status, else its badge, else its first technology. */
+export function projectBadge(project: Pick<Project, "status" | "badge" | "tags">): string {
+  return project.status ?? project.badge ?? project.tags[0];
 }
 
 export function repoUrl(project: Pick<Project, "repo">): string {
@@ -38,7 +40,8 @@ export const featuredProjects: Project[] = [
     name: "Flight search",
     repo: "flight-search",
     cvSummary: "Spring Boot REST API, hexagonal architecture, test-first.",
-    tags: ["Java 21", "Spring Boot 3.4", "Hexagonal architecture", "GitHub Actions"],
+    badge: "Spring Boot",
+    tags: ["Hexagonal architecture", "Spring Boot 3.4", "Java 21", "GitHub Actions"],
     description:
       "A Spring Boot REST API for searching flights, built test-first with hexagonal architecture. The domain and application code is plain Java; all framework code (Spring, JPA, REST) sits outside and depends inward, never the other way. Java 21, Spring Boot 3.4, with CI on GitHub Actions.",
   },

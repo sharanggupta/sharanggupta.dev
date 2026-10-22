@@ -26,13 +26,15 @@ const NOTICE: Record<string, string> = {
 
 // The input and the ghost text behind it share these, so the completion lines up with the typing.
 const TEXT = "px-4 py-2.5 text-base leading-normal";
-const FIELD = "rounded-full border border-border bg-bg focus-within:border-accent";
+// The pill carries the frosted surface itself: there is no band behind it, it floats over the page.
+const FIELD = "rounded-full border border-border bg-surface/85 shadow-lift backdrop-blur-[10px] focus-within:border-accent";
+const FLOATING_NOTE = "inline-block max-w-full rounded-full border border-border bg-surface/85 px-3 py-1 text-xs text-muted backdrop-blur-[10px]";
 const INPUT = cx(TEXT, "relative w-full min-w-0 bg-transparent text-fg outline-none placeholder:text-muted/80 disabled:opacity-60");
 const GHOST = cx(TEXT, "pointer-events-none absolute inset-0 overflow-hidden whitespace-pre text-muted/60");
-const BUTTON = "rounded-full bg-accent px-5 py-2.5 font-semibold text-bg transition hover:opacity-90 disabled:opacity-60";
+const BUTTON = "rounded-full bg-accent px-5 py-2.5 font-semibold text-bg shadow-lift transition hover:opacity-90 disabled:opacity-60";
 
 /**
- * A slim full-width bar floating at the bottom of every page: one question at a time about Sharang,
+ * A pill floating at the bottom of every page, with no band behind it: one question at a time about Sharang,
  * answered from the site's own content by the Worker. It shows only while the Worker says answers are
  * left today, and goes away for the day once they are used up or the Worker cannot answer.
  *
@@ -115,14 +117,12 @@ export default function AskBar({ endpoint = DEFAULT_ENDPOINT }: { endpoint?: str
     <>
       {/* In the flow, so the footer can scroll out from under the fixed bar. */}
       <div className="h-24" aria-hidden="true" />
-      <section
-        aria-label="Ask about Sharang"
-        className={cx(styles.bar, "fixed inset-x-0 bottom-0 z-(--z-header) border-t border-border bg-surface/85 backdrop-blur-[10px]")}
-      >
-        {/* Extra left padding keeps the input clear of the theme toggle, which floats bottom left. */}
-        <Container className="py-3 pl-16 sm:pl-20">
+      {/* Nothing full-width: the section lets clicks through, only the pill, the button and the notes catch them. */}
+      <section aria-label="Ask about Sharang" className={cx(styles.bar, "pointer-events-none fixed inset-x-0 bottom-0 z-(--z-header)")}>
+        {/* Extra left padding keeps the pill clear of the theme toggle, which floats bottom left. */}
+        <Container className="pointer-events-auto pb-4 pl-16 sm:pb-6 sm:pl-20">
           {reply && (
-            <output className="mb-3 block max-h-56 overflow-y-auto rounded-xl border border-border bg-bg/70 p-4" aria-live="polite">
+            <output className="mb-3 block max-h-56 overflow-y-auto rounded-2xl border border-border bg-surface/90 p-4 shadow-lift backdrop-blur-[10px]" aria-live="polite">
               <div className="flex items-start justify-between gap-4">
                 <p className="text-sm text-muted">{reply.question}</p>
                 <button type="button" className="shrink-0 text-sm text-accent hover:underline" onClick={() => setReply(null)}>
@@ -161,7 +161,7 @@ export default function AskBar({ endpoint = DEFAULT_ENDPOINT }: { endpoint?: str
             </button>
           </form>
           {completion && (
-            <p id={hintId} className="mt-1.5 text-xs text-muted">
+            <p id={hintId} className={cx(FLOATING_NOTE, "mt-2")}>
               <span className={styles.keyboardOnly}>Press Tab to complete: {completion.full}</span>
               {/* No Tab on a touch screen: the same completion as one tap. */}
               <button type="button" className={cx(styles.touchOnly, "text-left text-accent")} onClick={() => void ask(completion.full)}>
@@ -169,7 +169,7 @@ export default function AskBar({ endpoint = DEFAULT_ENDPOINT }: { endpoint?: str
               </button>
             </p>
           )}
-          {notice && !completion && <p className="mt-1.5 text-xs text-muted">{notice}</p>}
+          {notice && !completion && <p className={cx(FLOATING_NOTE, "mt-2")}>{notice}</p>}
         </Container>
       </section>
     </>

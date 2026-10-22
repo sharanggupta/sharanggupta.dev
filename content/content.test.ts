@@ -3,7 +3,7 @@ import { education, skills } from "./background";
 import { experience } from "./experience";
 import { APPLIED_BY_MAINTAINERS, NOTES } from "./open-source";
 import { LINKS, PERSON, PROFILES } from "./person";
-import { alsoProjects, featuredProjects, repoUrl } from "./projects";
+import { alsoProjects, featuredProjects, projectBadge, repoUrl } from "./projects";
 import { recommendations } from "./recommendations";
 import { MENU_ITEMS, SECTION, sectionKicker } from "./sections";
 import { SEO } from "./seo";
@@ -57,6 +57,13 @@ describe("sections", () => {
 });
 
 describe("projects", () => {
+  it("never headline a card with a language version", () => {
+    for (const project of [...featuredProjects, ...alsoProjects]) expect(projectBadge(project)).not.toMatch(/^Java \d+$/);
+    expect(projectBadge({ status: "Work in progress", badge: "Spring Boot", tags: ["Java 21"] })).toBe("Work in progress");
+    expect(projectBadge({ badge: "Spring Boot", tags: ["Java 21"] })).toBe("Spring Boot");
+    expect(projectBadge({ tags: ["Spring Batch"] })).toBe("Spring Batch");
+  });
+
   it("have unique repositories and at least one tag", () => {
     const projects = [...featuredProjects, ...alsoProjects];
     expect(new Set(projects.map((project) => project.repo)).size).toBe(projects.length);
