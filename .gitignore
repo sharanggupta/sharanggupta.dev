@@ -39,3 +39,4 @@ yarn-error.log*
 /tests/visual/
 /test-results/
 /playwright-report/
+.env*

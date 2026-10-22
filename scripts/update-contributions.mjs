@@ -38,9 +38,10 @@ const pullRequests = await fetchPullRequests(HANDLE);
 const projects = readJson(PROJECTS_PATH);
 const notes = readJson(NOTES_PATH);
 
-// 1. The snapshot: only the start of a body is ever shown by the site, so it stays small.
+// 1. The snapshot: only the start of a body is ever shown by the site, so it stays small. No timestamp,
+//    so that a daily run that found nothing new changes nothing and opens no pull request.
 const merged = pullRequests.merged.map((pullRequest) => ({ ...pullRequest, body: pullRequest.body.slice(0, BODY_LIMIT) }));
-writeJson(SNAPSHOT_PATH, { ...pullRequests, merged });
+writeJson(SNAPSHOT_PATH, { merged, openCount: pullRequests.openCount });
 console.log(`${merged.length} merged pull requests, ${pullRequests.openCount} open.`);
 
 // Sequential on purpose below: the GitHub rate limit, and one model call at a time.
@@ -49,7 +50,8 @@ console.log(`${merged.length} merged pull requests, ${pullRequests.openCount} op
 const repos = new Set([...pullRequests.merged.map((pullRequest) => pullRequest.repo), ...Object.keys(projects)]);
 for (const repo of repos) {
   const stars = await starsOf(repo);
-  projects[repo] = { name: projects[repo]?.name ?? repo.split("/")[1], ...projects[repo], stars, starsAt: today };
+  const unchanged = projects[repo]?.stars === stars;
+  projects[repo] = { name: projects[repo]?.name ?? repo.split("/")[1], ...projects[repo], stars, starsAt: unchanged ? projects[repo].starsAt : today };
 }
 
 // 3. A note for every merged pull request that has none.

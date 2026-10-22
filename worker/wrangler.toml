@@ -13,7 +13,7 @@ binding = "AI"
 
 [[kv_namespaces]]
 binding = "COUNTERS"
-id = "REPLACE_WITH_THE_ID_FROM_wrangler_kv_namespace_create"
+id = "bcf4cfdad9e24931bc5514d4643641f1"
 
 # Three questions a minute per visitor, on top of the daily caps in src/logic.ts.
 [[ratelimits]]
