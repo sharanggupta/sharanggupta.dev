@@ -78,7 +78,8 @@ most of an answer's cost. And every answer is cached in KV for a week, keyed by 
 question and the profile's hash: the same question again costs nothing and counts for nothing. The
 bar (`components/ask/AskBar.tsx`) offers the questions in `content/ask.ts` as chips and as
 suggestions while typing, so most visitors ask in words that are already answered. The Worker logs
-the model's reported token usage per answer, for tuning the daily cap.
+the model's reported token usage per answer, for tuning the daily cap. It keeps a copy of the last
+good profile in KV and answers from it if the site refuses the fetch (Vercel's bot checks can).
 
 The bar shows only while the Worker says answers are left, and goes away for the day when they run
 out or the Worker fails, so nothing on the page breaks when the quota is spent. The model is
