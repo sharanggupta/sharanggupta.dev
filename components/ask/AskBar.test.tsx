@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import AskBar from "./AskBar";
@@ -52,12 +52,9 @@ describe("AskBar", () => {
     const fetch = mockFetch(reply(200, { available: true, remaining: 12 }), reply(200, { answer: "Mostly Java and Spring.", remaining: 11 }));
     const user = userEvent.setup();
     render(<AskBar endpoint={ENDPOINT} />);
-    expect(await screen.findByText(/12 answers left today/)).toBeInTheDocument();
-
     await ask(user, "What does Sharang work on?");
     expect(await screen.findByText("Mostly Java and Spring.")).toBeInTheDocument();
     expect(screen.getByText("What does Sharang work on?")).toBeInTheDocument();
-    expect(screen.getByText(/11 answers left today/)).toBeInTheDocument();
     expect(fetch).toHaveBeenLastCalledWith(`${ENDPOINT}/ask`, expect.objectContaining({ method: "POST", body: JSON.stringify({ question: "What does Sharang work on?" }) }));
 
     await user.click(screen.getByRole("button", { name: "Close" }));
@@ -81,27 +78,37 @@ describe("AskBar", () => {
     await waitFor(() => expect(container).toBeEmptyDOMElement());
   });
 
-  it("offers suggested questions as chips, and asks one on a click", async () => {
+  it("completes a suggested question in grey as the visitor types, and Tab accepts it", async () => {
     const fetch = mockFetch(reply(200, { available: true, remaining: 12 }), reply(200, { answer: "Several, led by Spring Framework.", remaining: 12, cached: true }));
     const user = userEvent.setup();
     render(<AskBar endpoint={ENDPOINT} />);
-    const chips = await screen.findByRole("list", { name: "Try one of these" });
-    const chip = within(chips).getByRole("button", { name: "What has Sharang fixed in Spring?" });
+    const input = await screen.findByLabelText("Ask a question about Sharang");
 
-    await user.click(chip);
+    await user.type(input, "what has");
+    expect(screen.getByTestId("ask-ghost")).toHaveTextContent("what has Sharang fixed in Spring?");
+    expect(screen.getByText(/Press Tab to complete: what has Sharang fixed in Spring\?/)).toBeInTheDocument();
+
+    await user.keyboard("{Tab}");
+    expect(input).toHaveValue("what has Sharang fixed in Spring?");
+    expect(screen.getByTestId("ask-ghost")).toHaveTextContent("what has Sharang fixed in Spring?");
+
+    await user.click(screen.getByRole("button", { name: "Ask" }));
     expect(await screen.findByText("Several, led by Spring Framework.")).toBeInTheDocument();
-    expect(fetch).toHaveBeenLastCalledWith(`${ENDPOINT}/ask`, expect.objectContaining({ body: JSON.stringify({ question: "What has Sharang fixed in Spring?" }) }));
-    expect(screen.queryByRole("list", { name: "Try one of these" })).not.toBeInTheDocument();
+    expect(fetch).toHaveBeenLastCalledWith(`${ENDPOINT}/ask`, expect.objectContaining({ body: JSON.stringify({ question: "what has Sharang fixed in Spring?" }) }));
   });
 
-  it("suggests matching questions while typing, and asks the chosen one", async () => {
-    const fetch = mockFetch(reply(200, { available: true, remaining: 12 }), reply(200, { answer: "At THG he is a Software Engineer.", remaining: 11 }));
+  it("offers no completion when the typing goes its own way, and the right arrow accepts one at the end of the text", async () => {
+    mockFetch(reply(200, { available: true, remaining: 12 }));
     const user = userEvent.setup();
     render(<AskBar endpoint={ENDPOINT} />);
-    await user.type(await screen.findByLabelText("Ask a question about Sharang"), "thg");
-    const suggestions = screen.getByRole("list", { name: "Suggested questions" });
-    await user.click(within(suggestions).getByRole("button", { name: "What does Sharang do at THG?" }));
-    expect(await screen.findByText("At THG he is a Software Engineer.")).toBeInTheDocument();
-    expect(fetch).toHaveBeenLastCalledWith(`${ENDPOINT}/ask`, expect.objectContaining({ body: JSON.stringify({ question: "What does Sharang do at THG?" }) }));
+    const input = await screen.findByLabelText("Ask a question about Sharang");
+
+    await user.type(input, "Where does");
+    expect(screen.queryByText(/Press Tab to complete/)).not.toBeInTheDocument();
+
+    await user.clear(input);
+    await user.type(input, "How can");
+    await user.keyboard("{ArrowRight}");
+    expect(input).toHaveValue("How can I contact Sharang?");
   });
 });

@@ -1,8 +1,8 @@
 "use client";
 
-import { type FormEvent, useEffect, useId, useState } from "react";
+import { type FormEvent, type KeyboardEvent, useEffect, useId, useState } from "react";
 import Container from "@/components/ui/Container";
-import { matchingSuggestions, SUGGESTED_QUESTIONS } from "@/content/ask";
+import { completionFor } from "@/content/ask";
 import { PERSON } from "@/content/person";
 import { cx } from "@/lib/classNames";
 import styles from "./AskBar.module.css";
@@ -11,13 +11,11 @@ import styles from "./AskBar.module.css";
 const DEFAULT_ENDPOINT = process.env.NEXT_PUBLIC_ASK_URL;
 const QUESTION_LIMIT = 300;
 const PLACEHOLDER = "Ask about my work…";
-/** How many suggested questions the empty box offers as chips. */
-const CHIP_COUNT = 4;
 
 type Phase = "checking" | "ready" | "asking" | "hidden";
 type Reply = { question: string; answer: string };
-type Status = { available?: boolean; remaining?: number };
-type Answer = { answer?: string; remaining?: number; error?: string };
+type Status = { available?: boolean };
+type Answer = { answer?: string; error?: string };
 
 const NOTICE: Record<string, string> = {
   visitor_limit: `That is today's five questions from you. For anything else, email ${PERSON.email}.`,
@@ -26,27 +24,30 @@ const NOTICE: Record<string, string> = {
   empty: "Type a question first.",
 };
 
-const INPUT =
-  "min-w-0 flex-1 rounded-full border border-border bg-bg px-4 py-2.5 text-fg placeholder:text-muted/80 focus:border-accent disabled:opacity-60";
+// The input and the ghost text behind it share these, so the completion lines up with the typing.
+const TEXT = "px-4 py-2.5 text-base leading-normal";
+const FIELD = "rounded-full border border-border bg-bg focus-within:border-accent";
+const INPUT = cx(TEXT, "relative w-full min-w-0 bg-transparent text-fg outline-none placeholder:text-muted/80 disabled:opacity-60");
+const GHOST = cx(TEXT, "pointer-events-none absolute inset-0 overflow-hidden whitespace-pre text-muted/60");
 const BUTTON = "rounded-full bg-accent px-5 py-2.5 font-semibold text-bg transition hover:opacity-90 disabled:opacity-60";
-const CHIP =
-  "rounded-full border border-border bg-bg/70 px-3 py-1 text-sm text-muted transition hover:border-accent hover:text-accent disabled:opacity-60";
-const SUGGESTION = "block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-surface hover:text-accent";
 
 /**
- * A full-width bar floating at the bottom of every page: one question at a time about Sharang, answered
- * from the site's own content by the Worker. It shows only while the Worker says answers are left today,
- * and goes away for the day once they are used up or the Worker cannot answer. Suggested questions are
- * offered as chips, and matched while typing: a question asked in those words comes from the Worker's cache.
+ * A slim full-width bar floating at the bottom of every page: one question at a time about Sharang,
+ * answered from the site's own content by the Worker. It shows only while the Worker says answers are
+ * left today, and goes away for the day once they are used up or the Worker cannot answer.
+ *
+ * As the visitor types, the first suggested question that starts the same way is completed in grey
+ * inside the input; Tab or the right arrow accepts it, typing on refines or dismisses it. On a touch
+ * screen, which has no Tab, the same completion is one tappable line under the input. A question asked
+ * in a suggestion's words is answered from the Worker's cache.
  */
 export default function AskBar({ endpoint = DEFAULT_ENDPOINT }: { endpoint?: string }) {
   const [phase, setPhase] = useState<Phase>(endpoint ? "checking" : "hidden");
-  const [remaining, setRemaining] = useState(0);
   const [question, setQuestion] = useState("");
   const [reply, setReply] = useState<Reply | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const inputId = useId();
-  const suggestionsId = useId();
+  const hintId = useId();
 
   useEffect(() => {
     if (!endpoint) return;
@@ -55,7 +56,6 @@ export default function AskBar({ endpoint = DEFAULT_ENDPOINT }: { endpoint?: str
       .then((response) => (response.ok ? (response.json() as Promise<Status>) : Promise.reject(new Error(String(response.status)))))
       .then((status) => {
         if (cancelled) return;
-        setRemaining(status.remaining ?? 0);
         setPhase(status.available ? "ready" : "hidden");
       })
       .catch(() => {
@@ -80,7 +80,6 @@ export default function AskBar({ endpoint = DEFAULT_ENDPOINT }: { endpoint?: str
       const body = (await response.json().catch(() => ({}))) as Answer;
       if (response.ok && body.answer) {
         setReply({ question: asked, answer: body.answer });
-        setRemaining(body.remaining ?? remaining);
         setQuestion("");
         setPhase("ready");
       } else if (body.error && body.error in NOTICE) {
@@ -101,13 +100,21 @@ export default function AskBar({ endpoint = DEFAULT_ENDPOINT }: { endpoint?: str
 
   if (phase === "checking" || phase === "hidden") return null;
   const busy = phase === "asking";
-  const suggestions = busy ? [] : matchingSuggestions(question);
-  const showChips = !busy && question.trim() === "" && !reply;
+  const completion = busy ? undefined : completionFor(question);
+
+  function acceptCompletion(event: KeyboardEvent<HTMLInputElement>) {
+    if (!completion) return;
+    const caretAtEnd = event.currentTarget.selectionEnd === question.length;
+    if (event.key === "Tab" || (event.key === "ArrowRight" && caretAtEnd)) {
+      event.preventDefault();
+      setQuestion(completion.full);
+    }
+  }
 
   return (
     <>
       {/* In the flow, so the footer can scroll out from under the fixed bar. */}
-      <div className="h-40 sm:h-36" aria-hidden="true" />
+      <div className="h-24" aria-hidden="true" />
       <section
         aria-label="Ask about Sharang"
         className={cx(styles.bar, "fixed inset-x-0 bottom-0 z-(--z-header) border-t border-border bg-surface/85 backdrop-blur-[10px]")}
@@ -125,51 +132,44 @@ export default function AskBar({ endpoint = DEFAULT_ENDPOINT }: { endpoint?: str
               <p className="mt-2">{reply.answer}</p>
             </output>
           )}
-          {suggestions.length > 0 && (
-            <ul id={suggestionsId} className="mb-2 rounded-xl border border-border bg-bg/90 p-1" aria-label="Suggested questions">
-              {suggestions.map((suggestion) => (
-                <li key={suggestion}>
-                  <button type="button" className={SUGGESTION} onClick={() => void ask(suggestion)}>
-                    {suggestion}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
           <form className="flex gap-2" onSubmit={submit}>
             <label htmlFor={inputId} className="sr-only">
               Ask a question about Sharang
             </label>
-            <input
-              id={inputId}
-              className={INPUT}
-              type="text"
-              value={question}
-              onChange={(event) => setQuestion(event.target.value)}
-              placeholder={PLACEHOLDER}
-              maxLength={QUESTION_LIMIT}
-              autoComplete="off"
-              aria-describedby={suggestions.length > 0 ? suggestionsId : undefined}
-              disabled={busy}
-            />
+            <div className={cx(FIELD, "relative min-w-0 flex-1")}>
+              {/* The typed part is rendered invisibly so the rest of the suggestion starts exactly where the caret is. */}
+              <div className={GHOST} aria-hidden="true" data-testid="ask-ghost">
+                <span className="invisible">{question}</span>
+                {completion?.rest}
+              </div>
+              <input
+                id={inputId}
+                className={INPUT}
+                type="text"
+                value={question}
+                onChange={(event) => setQuestion(event.target.value)}
+                onKeyDown={acceptCompletion}
+                placeholder={PLACEHOLDER}
+                maxLength={QUESTION_LIMIT}
+                autoComplete="off"
+                aria-describedby={completion ? hintId : undefined}
+                disabled={busy}
+              />
+            </div>
             <button type="submit" className={BUTTON} disabled={busy || question.trim() === ""}>
               {busy ? "Asking…" : "Ask"}
             </button>
           </form>
-          {showChips && (
-            <ul className="mt-2 flex flex-wrap gap-2" aria-label="Try one of these">
-              {SUGGESTED_QUESTIONS.slice(0, CHIP_COUNT).map((suggestion) => (
-                <li key={suggestion}>
-                  <button type="button" className={CHIP} onClick={() => void ask(suggestion)}>
-                    {suggestion}
-                  </button>
-                </li>
-              ))}
-            </ul>
+          {completion && (
+            <p id={hintId} className="mt-1.5 text-xs text-muted">
+              <span className={styles.keyboardOnly}>Press Tab to complete: {completion.full}</span>
+              {/* No Tab on a touch screen: the same completion as one tap. */}
+              <button type="button" className={cx(styles.touchOnly, "text-left text-accent")} onClick={() => void ask(completion.full)}>
+                Ask: {completion.full}
+              </button>
+            </p>
           )}
-          <p className="mt-1.5 text-xs text-muted">
-            {notice ?? `Answered by an AI model from this site's content, so check anything that matters. ${remaining} answers left today.`}
-          </p>
+          {notice && !completion && <p className="mt-1.5 text-xs text-muted">{notice}</p>}
         </Container>
       </section>
     </>
