@@ -40,3 +40,6 @@ yarn-error.log*
 /test-results/
 /playwright-report/
 .env*
+
+# wrangler local state (miniflare)
+.wrangler
