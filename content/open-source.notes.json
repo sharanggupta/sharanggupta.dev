@@ -322,5 +322,69 @@
     "fix": "The change adds @Test to both methods. With the annotation present, the Maven build runs them and both pass. Because there is no behavioural change to production code, no additional tests are needed; the methods themselves are the verification that the annotation is correct.",
     "source": "claude",
     "writtenAt": "2026-10-22"
+  },
+  "https://github.com/apache/camel/pull/28313": {
+    "kind": "fix",
+    "summary": "DefaultPackageScanClassResolver scans a package in a JAR without also returning classes from sibling packages whose names start with the same characters, as directory scanning already did.",
+    "problem": "DefaultPackageScanClassResolver matched JAR entries with entry.startsWith(parent), where parent had no trailing slash. Scanning com.acme.routes from a JAR, for example through camel.main.base-package-scan, therefore also returned the classes of com.acme.routesupport and com.acme.routes2. The same scan from a directory on the classpath returned only com.acme.routes. A packaged application could discover RoutesBuilder or configuration classes from packages it never asked for, and behave differently from the same classes loaded from a directory.",
+    "fix": "doLoadImplementationsInJar now matches entries on the package path plus a slash, as the directory branch and DefaultPackageScanResourceResolver already did. The root package still matches every entry. A new test builds a JAR at test time with one class in the scanned package and one in a sibling package. It scans the JAR through a URLClassLoader and asserts that only the first class is found. Without the change the scan returns both ScanTarget and SiblingPackageClass. The 4.24 upgrade guide describes the change in behaviour.",
+    "source": "claude",
+    "writtenAt": "2026-10-23"
+  },
+  "https://github.com/apache/shiro/pull/2925": {
+    "kind": "fix",
+    "summary": "WildcardPermission and DomainPermission lower-case independently of the JVM default locale, so case-insensitive permission checks hold under a Turkish locale.",
+    "problem": "WildcardPermission.setParts implemented its default case-insensitive mode with toLowerCase(), and DomainPermission.getDomain derived the domain from the class name the same way, so both followed the JVM default locale. Under a Turkish default locale an uppercase I lower-cases to a dotless ı. A grant stored as ADMIN:* then stopped implying admin:read, and a subclass such as InvoicePermission got the domain ınvoice and never matched invoice:*. Permission checks failed silently, depending only on the host's locale.",
+    "fix": "Both classes now lower-case with Locale.ROOT. The change also applies Locale.ROOT to the JSESSIONID lookup in DefaultWebSessionManager, StringUtils.startsWithIgnoreCase, the HTTP method filters, SimpleCookie and the hash format classes, which used Locale.ENGLISH or the default locale. A new PermissionDefaultLocaleTest sets the default locale to tr-TR and asserts the ADMIN and invoice cases from the report, which returned false on 3.0.1. The test runs isolated because the suite executes tests in parallel.",
+    "source": "claude",
+    "writtenAt": "2026-10-23"
+  },
+  "https://github.com/jline/jline3/pull/2333": {
+    "kind": "tests",
+    "summary": "The console-ui regression test for issue 1025 is now named Issue1025Test, so Surefire picks it up and the build runs it.",
+    "problem": "The regression test for issue 1025 was added in pull request 1026 as a class named Issue1025. Surefire only runs classes that match its default include patterns, Test*, *Test, *Tests and *TestCase, and the console-ui module does not override them. The build had never run the test, so if the bug it was written to catch came back, nothing would have flagged it.",
+    "fix": "The class is renamed to Issue1025Test, which matches CheckboxPromptTest, ExpandableChoicePromptTest and PromptBuilderTest in the same module. Only the file and class name change. Running mvn -pl console-ui -am package now runs it alongside the other console-ui tests and it passes. The spotless check passes too.",
+    "source": "claude",
+    "writtenAt": "2026-10-23"
+  },
+  "https://github.com/apache/cxf/pull/3616": {
+    "kind": "fix",
+    "summary": "NewCookieHeaderProvider reads and writes the SameSite attribute and always treats the first segment of a Set-Cookie header as the cookie, so attributes are no longer mistaken for cookies.",
+    "problem": "NewCookieHeaderProvider.fromString treated every attribute it did not recognise as the cookie's name=value pair, so foo=bar;SameSite=Lax was parsed as a cookie named SameSite with value Lax. In the other direction, toString dropped SameSite, so a NewCookie built with sameSite(...) lost the attribute in the Set-Cookie header and in Response.getCookies(). Applications could neither send nor read a SameSite policy through the JAX-RS cookie API in CXF.",
+    "fix": "The first non-empty segment is now always the cookie's name=value pair, as RFC 6265 section 5.2 specifies, and later unknown attributes and empty segments are ignored. SameSite is matched case-insensitively, an unrecognised value is ignored, and toString writes SameSite=Strict, Lax or None. Review pointed out that a cookie named after an attribute, such as path=abc; Path=/, was still rejected, which led to the unconditional first-segment rule. New NewCookieHeaderProviderTest cases cover parsing, a Turkish locale and a round trip; the SameSite and unknown-attribute cases fail without the change.",
+    "source": "claude",
+    "writtenAt": "2026-10-23"
+  },
+  "https://github.com/apache/paimon/pull/10735": {
+    "kind": "tests",
+    "summary": "CdcActionCommonUtilsTest now runs testRejectSinkConfiguration, so a test covers the check in CdcActionCommonUtils.parseTableConfigByTable that rejects per-table sink options.",
+    "problem": "When testRejectSinkConfiguration was added to CdcActionCommonUtilsTest in an earlier pull request, it had no @Test annotation, so JUnit never ran it. As a result, no test covered the check in CdcActionCommonUtils.parseTableConfigByTable that rejects per-table sink.* options. That check could have been removed or broken without the build noticing, even though a test for it appeared to exist.",
+    "fix": "The change adds the missing @Test annotation and changes no production code. CdcActionCommonUtilsTest now runs three tests instead of two, and all of them pass. The test that now runs expects parseTableConfigByTable to throw when it is given a per-table sink option. It fails if the sink. check is removed from parseTableConfigByTable.",
+    "source": "claude",
+    "writtenAt": "2026-10-23"
+  },
+  "https://github.com/apache/storm/pull/9186": {
+    "kind": "tests",
+    "summary": "Two Apache Storm tests that silently stopped running after the JUnit 5 migration run again, and the storm-hdfs time format test now asserts on the call that throws.",
+    "problem": "The JUnit 5 migration replaced @Test(expected = IllegalArgumentException.class) with assertThrows in TCKTest.testInvalidTopologySource and in the storm-hdfs bolt TestSimpleFileNameFormat.testTimeFormat, but it also removed the @Test annotation. JUnit stopped discovering either method, so neither test had run since. The build stayed green, but the checks that an invalid existing topology config fails validation and that an invalid time format is rejected were no longer exercised.",
+    "fix": "Both methods carry @Test again. In testTimeFormat the IllegalArgumentException is thrown by withTimeFormat with the input xyz, not by prepare, so restoring only the annotation made the test error. The call now sits inside assertThrows, as it already does in the trident TestSimpleFileNameFormat. Both tests pass on JDK 25 with checkstyle clean. Each one also fails when its input is made valid, which shows it checks the behaviour it claims to.",
+    "source": "claude",
+    "writtenAt": "2026-10-23"
+  },
+  "https://github.com/eclipse-jdtls/eclipse.jdt.ls/pull/3947": {
+    "kind": "tests",
+    "summary": "Four quick fix tests that lacked a @Test annotation now run under JUnit, with two of them corrected so they check the intended proposals.",
+    "problem": "Four test methods, JavadocQuickFixTest.testMissingReturn3, LocalCorrectionQuickFixTest.testUncaughtExceptionOnThis, LocalCorrectionQuickFixTest.testUncheckedConversionVariableDeclaration and AnonymousClassCreationToLambdaTest.testConvertToLambda5, were written without @Test, unlike the tests around them. JUnit had never run them, so the quick fixes they were meant to cover had no coverage from them. Two of them were also wrong in ways nobody had noticed, because they had never run.",
+    "fix": "The change adds @Test to all four methods and corrects two of them. testMissingReturn3 expected an \"Add '@param' tag\" proposal for a method that has no parameters, and now expects \"Add '@return' tag\". testConvertToLambda5 overloaded foo with an undeclared type B and now uses the declared interface J, so it covers the ambiguous overload that needs the (A) cast, matching testConvertToLambda10 in JDT UI's AssistQuickFixTest1d8. The three affected test classes pass locally.",
+    "source": "claude",
+    "writtenAt": "2026-10-23"
+  },
+  "https://github.com/eclipse-ee4j/yasson/pull/796": {
+    "kind": "fix",
+    "summary": "With the CASE_INSENSITIVE naming strategy, records and JsonbCreator classes whose parameter names contain an uppercase letter deserialise correctly instead of failing with a NullPointerException.",
+    "problem": "With PropertyNamingStrategy.CASE_INSENSITIVE, DeserializationModelCreator keyed the deserializers and default values of creator parameters by their lower-cased names, and JsonbCreatorDeserializer lower-cased the JSON keys too. Its creatorParams list, however, kept the parameter names as declared, so a parameter with an uppercase letter never matched and its value was dropped. Looking up its default value then failed with a NullPointerException, reported as an internal JsonbException, even when the JSON used exactly that name. Records and creators with camelCase parameters could not be read under that strategy.",
+    "fix": "JsonbCreatorDeserializer now renames the creator parameter names with the same renamer when it is created, so all three use the same keys, and keeps the parameter order that JsonbCreator.call() relies on. Other naming strategies use the identity renamer and are unaffected. Two new tests in PropertyNamingStrategyTest read a JsonbCreator class from firstName, FIRSTNAME and BirthYear, with missing values defaulting to null and 0, and a record from TYPECHANGED and colorChanged. Both fail on main with the reported exception.",
+    "source": "claude",
+    "writtenAt": "2026-10-23"
   }
 }

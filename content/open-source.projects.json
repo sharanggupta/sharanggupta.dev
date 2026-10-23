@@ -24,6 +24,11 @@
     "stars": 8259,
     "starsAt": "2026-10-22"
   },
+  "apache/storm": {
+    "name": "Apache Storm",
+    "stars": 6697,
+    "starsAt": "2026-10-23"
+  },
   "micronaut-projects/micronaut-core": {
     "name": "Micronaut Core",
     "stars": 6438,
@@ -38,6 +43,11 @@
     "name": "Apache Maven",
     "stars": 5374,
     "starsAt": "2026-10-22"
+  },
+  "apache/shiro": {
+    "name": "Apache Shiro",
+    "stars": 4462,
+    "starsAt": "2026-10-23"
   },
   "jetty/jetty.project": {
     "name": "Eclipse Jetty",
@@ -59,15 +69,30 @@
     "stars": 3640,
     "starsAt": "2026-10-22"
   },
+  "apache/paimon": {
+    "name": "Apache Paimon",
+    "stars": 3428,
+    "starsAt": "2026-10-23"
+  },
   "apache/commons-lang": {
     "name": "Apache Commons Lang",
     "stars": 3015,
     "starsAt": "2026-10-22"
   },
+  "eclipse-jdtls/eclipse.jdt.ls": {
+    "name": "Eclipse JDT Language Server",
+    "stars": 2458,
+    "starsAt": "2026-10-23"
+  },
   "spring-cloud/spring-cloud-config": {
     "name": "Spring Cloud Config",
     "stars": 2049,
     "starsAt": "2026-10-22"
+  },
+  "jline/jline3": {
+    "name": "JLine",
+    "stars": 1810,
+    "starsAt": "2026-10-23"
   },
   "spring-projects/spring-integration": {
     "name": "Spring Integration",
@@ -83,6 +108,11 @@
     "name": "Spring Cloud Stream",
     "stars": 1070,
     "starsAt": "2026-10-22"
+  },
+  "apache/cxf": {
+    "name": "Apache CXF",
+    "stars": 930,
+    "starsAt": "2026-10-23"
   },
   "spring-projects/spring-amqp": {
     "name": "Spring AMQP",

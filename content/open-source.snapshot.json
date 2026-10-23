@@ -1,6 +1,20 @@
 {
   "merged": [
     {
+      "url": "https://github.com/apache/camel/pull/28313",
+      "title": "CAMEL-26029: Package scanning of JARs must not include sibling packages",
+      "body": "_Claude Code on behalf of sharanggupta_\n\n# Description\n\nFixes [CAMEL-26029](https://issues.apache.org/jira/browse/CAMEL-26029).\n\n`DefaultPackageScanClassResolver.doLoadImplementationsInJar` matched JAR entries with `entry.startsWith(parent)` where `parent` has no trailing `/`, so scanning `com.acme.routes` from a JAR also returned the classes of `com.acme.routesupport` and `com.acme.routes2` (for example through `camel.main.base-package-scan`), while the same scan from a directory on the classpath only returned `com.acme.routes`. The directory branch of the same class and `DefaultPackageScanResourceResolver` already match on the package path plus `/`; this makes the JAR branch do the same (the root package still matches everything).\n\n- `core/camel-support`: the one-line boundary fix in `doLoadImplementationsInJar`.\n- `DefaultPackageScanClassResolverJarTest` (+ two tiny fixture classes in `jarfixture.routes` / `jarfixture.routesupport`): builds a fixture JAR at test time with a class in the scanned package and one in a sibling package, scans through a `URLClassLoader` over that JAR and asserts only the scanned package is returned. Fails before the fix (`[ScanTarget, SiblingPackageClass]`), passes after.\n- Upgrade guide 4.24: note for packaged applications that unknowingly relied on the sibling match.\n\nThe reproduction against the released camel-support 4.23.0 is in the JIRA.\n\n# Target\n\n- [x] I checked that the commit is targeting the correct branch (Camel 4 uses the `main` bra",
+      "repo": "apache/camel",
+      "mergedAt": "2026-10-23T05:24:30Z"
+    },
+    {
+      "url": "https://github.com/apache/shiro/pull/2925",
+      "title": "[#2924] - WildcardPermission and DomainPermission lower-case with the JVM default locale",
+      "body": "fixes #2924\n\nWhat happened: `WildcardPermission.setParts` implements the default case-insensitive mode with `wildcardString.toLowerCase()`, and `DomainPermission.getDomain` derives the domain with `clazz.getSimpleName().toLowerCase()`. Both follow the JVM default locale. On a JVM whose default locale is Turkish (`tr-TR` — the default on any Turkish OS/user account; `-Duser.language=tr -Duser.country=TR` reproduces it anywhere) an uppercase `I` lower-cases to a dotless `ı` (U+0131), so the \"case-insensitive\" comparison is no longer case-insensitive for any token containing `I`/`i`:\n\n```\ndefault locale = tr_TR                       (shiro-core 3.0.1)\n\"ADMIN:*\" implies \"admin:read\"               = false   (granted parts: admın:*, checked parts: admin:read)\n\"admin:*\" implies \"ADMIN:read\"               = false\nInvoicePermission.getDomain()                = ınvoice\n\"invoice:*\" implies InvoicePermission(\"view\") = false\n```\n\nUnder `en-US` every line is `true`/`invoice`. Permission strings are machine-read (realm data, `@RequiresPermissions`, `isPermitted(...)`), so a grant stored as `ADMIN:*` silently stops matching `admin:read`, and any `DomainPermission` subclass with a capital `I` in its name (`InvoicePermission`, `InventoryPermission`, …) never matches its configured domain.\n\nThis is the same class of bug fixed in SHIRO-415 (`\"BASIC\".toLowerCase()` in `isLoginAttempt`) and SHIRO-483 (`passwordsMatch` under tr_TR); those fixes used `Locale.ENGLISH`, as do `HttpAuthenticationFilter",
+      "repo": "apache/shiro",
+      "mergedAt": "2026-10-22T20:06:09Z"
+    },
+    {
       "url": "https://github.com/apache/ws-wss4j/pull/761",
       "title": "Rename DerivedKeyTests so Surefire runs it",
       "body": "The build only includes `**/*Test.java`, so the nine tests in `ws-security-policy-stax`'s `DerivedKeyTests` have never run. Its 35 sibling classes all end in `Test`.\n\nThis renames the class to `DerivedKeyTest`. All nine tests pass, and the module's test count goes from 189 to 198. PMD and checkstyle pass.\n",
@@ -8,11 +22,25 @@
       "mergedAt": "2026-10-22T05:49:29Z"
     },
     {
+      "url": "https://github.com/jline/jline3/pull/2333",
+      "title": "test: rename Issue1025 so Surefire runs it",
+      "body": "The regression test for #1025 was added in #1026 as `Issue1025`. That name doesn't match Surefire's default includes (`Test*`, `*Test`, `*Tests`, `*TestCase`), and console-ui doesn't override them, so the build has never run it.\n\nRenaming it to `Issue1025Test` gets it picked up. `mvn -pl console-ui -am package` now runs it alongside the other console-ui tests, and it passes, as does the spotless check.\n\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai -->\n\n<!-- coderabbit-ai-generated:v1 -->\n\n## Summary by CodeRabbit\n\n* **Tests**\n  * Updated the naming of a test. This change does not affect user-facing functionality.\n\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->",
+      "repo": "jline/jline3",
+      "mergedAt": "2026-10-22T14:00:39Z"
+    },
+    {
       "url": "https://github.com/apache/commons-csv/pull/639",
       "title": "Add missing @Test to CSVFormatTest.testEqualsSkipHeaderRecord#testEqualsSkipHeaderRecord()",
       "body": "The `CSVFormat.Builder` version of `testEqualsSkipHeaderRecord` was added without `@Test` when the builder was introduced (6a2376a9), so it never ran. Its siblings, including `testEqualsSkipHeaderRecord_Deprecated`, all have `@Test`. This adds the annotation; the test passes, and the default `mvn` build passes.\n\nBefore you push a pull request, review this list:\n\n- [x] Read the [contribution guidelines](CONTRIBUTING.md) for this project.\n- [x] Read the [ASF Generative Tooling Guidance](https://www.apache.org/legal/generative-tooling.html) if you use Artificial Intelligence (AI).\n- [x] I used AI to create any part of, or all of, this pull request. Which AI tool was used to create this pull request, and to what extent did it contribute? Claude (Anthropic) helped analyse the issue and draft the change and tests; I reviewed them against the code and ran the build.\n- [x] Run a successful build using the default [Maven](https://maven.apache.org/) goal with `mvn`; that's `mvn` on the command line by itself.\n- [ ] Write unit tests that match behavioral changes, where the tests fail if the changes to the runtime are not applied. This may not always be possible, but it is a best practice.\n- [x] Write a pull request description that is detailed enough to understand what the pull request does, how, and why.\n- [x] Each commit in the pull request should have a meaningful subject line and body. Note that a maintainer may squash commits during the merge process.\n",
       "repo": "apache/commons-csv",
       "mergedAt": "2026-10-22T11:24:12Z"
+    },
+    {
+      "url": "https://github.com/apache/cxf/pull/3616",
+      "title": "CXF-9072: Support the SameSite attribute in NewCookieHeaderProvider",
+      "body": "https://issues.apache.org/jira/browse/CXF-9072\n\n`NewCookieHeaderProvider.fromString` treats every attribute it doesn't recognize as the cookie's name=value pair, so `foo=bar;SameSite=Lax` is parsed as a cookie named `SameSite` with value `Lax`. `toString` drops SameSite, so a `NewCookie` built with `sameSite(...)` loses the attribute in the Set-Cookie header and in `Response.getCookies()`.\n\nChanges:\n- The first name=value pair is the cookie. Later unrecognized attributes are ignored, as in RFC 6265, section 5.2. Empty segments are skipped.\n- `SameSite` is parsed case-insensitively into `NewCookie.SameSite`. An unrecognized value is ignored.\n- `toString` writes `SameSite=Strict|Lax|None`.\n\nTests: new `NewCookieHeaderProviderTest` cases cover parsing, case-insensitivity, unknown SameSite values, unknown attributes, `toString`, empty segments, and a round trip. The SameSite and unknown-attribute cases fail without the change. `mvn -pl rt/frontend/jaxrs -am test` with `NewCookieHeaderProviderTest`, `CookieHeaderProviderTest` and `ResponseImplTest` passes, including checkstyle and PMD.\n\nThe JIRA issue is assigned to @reta. I'm happy to close this if you already have a fix in progress.\n",
+      "repo": "apache/cxf",
+      "mergedAt": "2026-10-22T21:08:12Z"
     },
     {
       "url": "https://github.com/apache/commons-io/pull/899",
@@ -29,11 +57,32 @@
       "mergedAt": "2026-10-22T02:07:04Z"
     },
     {
+      "url": "https://github.com/apache/paimon/pull/10735",
+      "title": "[cdc] Add missing @Test to CdcActionCommonUtilsTest#testRejectSinkConfiguration",
+      "body": "### Purpose\n\n`testRejectSinkConfiguration` was added in #9871 without `@Test`, so JUnit never ran it, and the check that rejects per-table `sink.*` options in `CdcActionCommonUtils.parseTableConfigByTable` had no test. This adds the annotation.\n\n### Tests\n\n`CdcActionCommonUtilsTest` now runs 3 tests instead of 2, all passing. The test fails if the `sink.` check is removed.\n",
+      "repo": "apache/paimon",
+      "mergedAt": "2026-10-23T01:53:01Z"
+    },
+    {
       "url": "https://github.com/spring-projects/spring-framework/pull/37543",
       "title": "Fix buffer leak in ProtobufDecoder on cancel",
       "body": "`ProtobufDecoder.decode(Publisher)` releases the buffer of a partially read message with `doOnTerminate`, so only when the input completes or fails. When the subscriber cancels while a message is split across data buffers, for example right after receiving the previous message, that buffer is never released. With pooled buffers, such as Netty's, it leaks.\n\nThis change uses `doFinally` instead, as `AbstractCharSequenceDecoder` does, so that the buffer is also released on cancel.\n\nThe new `ProtobufDecoderTests#decodeCancelWhileMessageIncomplete` decodes a data buffer that holds one message and half of the next, then cancels after the first message. Without the change, `LeakAwareDataBufferFactory` reports 1 buffer leak. The protobuf codec tests of `spring-web` and checkstyle pass.\n",
       "repo": "spring-projects/spring-framework",
       "mergedAt": "2026-10-22T08:20:05Z"
+    },
+    {
+      "url": "https://github.com/apache/storm/pull/9186",
+      "title": "Restore two test annotations lost in the JUnit 5 migration",
+      "body": "## What is the purpose of the change\n\nThe JUnit 5 migration (STORM-3832, #3479) replaced `@Test(expected = IllegalArgumentException.class)` with `assertThrows` in `TCKTest.testInvalidTopologySource` and in the storm-hdfs bolt `TestSimpleFileNameFormat.testTimeFormat`, but also dropped `@Test`, so neither test has run since. This adds `@Test` back to both.\n\nIn `testTimeFormat` the exception is thrown by `withTimeFormat(\"xyz\")`, not by `prepare`, so that call moves inside `assertThrows`, as the trident `TestSimpleFileNameFormat` already does. With only the annotation restored, the test errors out.\n\n## How was the change tested\n\n`mvn -pl external/storm-hdfs,flux/flux-core -am verify -Dtest='TCKTest,TestSimpleFileNameFormat'` on JDK 25: all tests pass and checkstyle is clean. Each test also fails when its input is made valid.\n",
+      "repo": "apache/storm",
+      "mergedAt": "2026-10-23T06:16:52Z"
+    },
+    {
+      "url": "https://github.com/eclipse-jdtls/eclipse.jdt.ls/pull/3947",
+      "title": "Add missing @Test annotations to four quick fix tests",
+      "body": "Four test methods were written without `@Test`, unlike the tests around them, so JUnit has never run them:\n\n- `JavadocQuickFixTest.testMissingReturn3`\n- `LocalCorrectionQuickFixTest.testUncaughtExceptionOnThis`\n- `LocalCorrectionQuickFixTest.testUncheckedConversionVariableDeclaration`\n- `AnonymousClassCreationToLambdaTest.testConvertToLambda5`\n\nTwo needed a small fix in the test once enabled:\n\n- `testMissingReturn3` expected an \"Add '@param' tag\" proposal, but the method has no parameters. The proposal for the missing return tag is \"Add '@return' tag\".\n- `testConvertToLambda5` declared `interface J` but overloaded `foo` with an undeclared type `B`. It now uses `J`, so it covers the ambiguous overload that needs the `(A)` cast, like `testConvertToLambda10` in JDT UI's `AssistQuickFixTest1d8`.\n\nThe three affected test classes pass locally.\n",
+      "repo": "eclipse-jdtls/eclipse.jdt.ls",
+      "mergedAt": "2026-10-22T19:18:22Z"
     },
     {
       "url": "https://github.com/apache/camel/pull/28129",
@@ -83,6 +132,13 @@
       "body": "Fixes #134.\n\nThis adds a FAQ entry, right after the \"Must issue a STARTTLS command first\" one, for:\n\n```\nGot bad greeting from SMTP host: <host>, port: <port>, response: [EOF]\n```\n\nAs requested in the issue, it explains:\n\n- that the server closed the connection before sending its greeting, which usually means that the port expects SSL from the start, as port 465 does, while the provider connected in plain text;\n- that the resolution is to set `mail.smtp.ssl.enable=true` and remove `mail.smtp.starttls.enable`, with a short example;\n- the alternative of a STARTTLS port, usually 587, with `mail.smtp.starttls.enable=true`.\n\nIt links to `SSLNOTES.txt` like the STARTTLS entry, and the index has a link to the new entry. Only `www/FAQ.html` changes. I did not add it to `CHANGES.txt`, which so far only lists code changes.\n",
       "repo": "eclipse-ee4j/angus-mail",
       "mergedAt": "2026-10-20T03:31:16Z"
+    },
+    {
+      "url": "https://github.com/eclipse-ee4j/yasson/pull/796",
+      "title": "Deserialize creators and records with the CASE_INSENSITIVE naming strategy",
+      "body": "**What**\n\nWith `PropertyNamingStrategy.CASE_INSENSITIVE`, deserializing a class with a `@JsonbCreator`, or a record, fails as soon as a parameter name contains an uppercase letter, even when the JSON uses exactly that name:\n\n```java\nrecord Car(@JsonbProperty(\"typeChanged\") String type, @JsonbProperty(\"colorChanged\") String color) {}\n\nJsonbBuilder.create(new JsonbConfig().withPropertyNamingStrategy(PropertyNamingStrategy.CASE_INSENSITIVE))\n        .fromJson(\"{\\\"typeChanged\\\":\\\"skoda\\\",\\\"colorChanged\\\":\\\"red\\\"}\", Car.class);\n```\n\n```\njakarta.json.bind.JsonbException: Internal error: Cannot invoke \"org.eclipse.yasson.internal.deserializer.ModelDeserializer.deserialize(Object, org.eclipse.yasson.internal.DeserializationContextImpl)\" because the return value of \"java.util.Map.get(Object)\" is null\n```\n\n**Why**\n\nWith `CASE_INSENSITIVE`, `DeserializationModelCreator` keys the deserializers and the default values of the creator parameters by their lower-cased names, and `JsonbCreatorDeserializer` lower-cases the JSON keys with the same renamer. But `JsonbCreatorDeserializer.creatorParams` held the creator parameter names as they are. So `creatorParams.contains(key)` never matched a parameter with an uppercase letter, and its value was dropped. At the end of the object, `defaultCreatorValues.get(param)` then found no default value for it, which is the `NullPointerException` above.\n\n**How**\n\n`JsonbCreatorDeserializer` renames the creator parameter names with the same renamer when it is ",
+      "repo": "eclipse-ee4j/yasson",
+      "mergedAt": "2026-10-22T19:14:55Z"
     },
     {
       "url": "https://github.com/eclipse-ee4j/mojarra/pull/6066",
@@ -260,5 +316,5 @@
       "mergedAt": "2026-10-07T21:15:49Z"
     }
   ],
-  "openCount": 127
+  "openCount": 125
 }
